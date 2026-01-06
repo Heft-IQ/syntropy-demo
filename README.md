@@ -1,36 +1,174 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Syntropy Demo
+
+A Next.js demo application showcasing Syntropy's enterprise intelligence layer with voice-driven metric definition, architecture visualization, and enterprise dashboard features.
+
+## Features
+
+- **Architecture Visualization**: Interactive system architecture diagram with flow simulation
+- **Onboarding Wizard**: Multi-step onboarding flow for connecting data sources
+- **Voice Architect**: AI-powered voice interface for defining and revising business metrics
+- **Enterprise Dashboard**: Comprehensive dashboard for managing semantic rules and audit logs
+- **Impact Review**: Simulation and review system for metric changes
+
+## Tech Stack
+
+- **Framework**: Next.js 16+ (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **Icons**: Lucide React
+- **Deployment**: Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ 
+- npm, yarn, or pnpm
+
+### Installation
+
+1. Clone the repository or navigate to the project directory:
+```bash
+cd syntropy-demo
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+3. Run the development server:
 ```bash
 npm run dev
 # or
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+syntropy-demo/
+├── app/
+│   ├── layout.tsx          # Root layout with metadata
+│   ├── page.tsx             # Main app entry point
+│   └── globals.css          # Global styles with Tailwind
+├── components/
+│   ├── architecture/        # Architecture visualization
+│   ├── onboarding/          # Onboarding wizard
+│   ├── voice-architect/     # Voice architect modal
+│   ├── dashboard/           # Enterprise dashboard
+│   └── ui/                  # Shared UI components
+├── lib/
+│   └── data.ts              # Mock data and constants
+├── types/
+│   └── index.ts             # TypeScript type definitions
+└── ...
+```
 
-## Learn More
+## Deployment to Vercel
 
-To learn more about Next.js, take a look at the following resources:
+### Option 1: Deploy via Vercel CLI
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Install Vercel CLI:
+```bash
+npm i -g vercel
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. Deploy:
+```bash
+vercel
+```
 
-## Deploy on Vercel
+3. Follow the prompts to link your project or create a new one.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Option 2: Deploy via GitHub
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push your code to a GitHub repository.
+
+2. Import the project in [Vercel Dashboard](https://vercel.com/dashboard).
+
+3. Vercel will automatically detect Next.js and configure the build settings.
+
+4. Click "Deploy" to deploy your application.
+
+### Option 3: Deploy via Vercel Dashboard
+
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard).
+
+2. Click "Add New Project".
+
+3. Import your Git repository or upload the project folder.
+
+4. Vercel will automatically configure the build settings for Next.js.
+
+5. Click "Deploy".
+
+## Build for Production
+
+To create an optimized production build:
+
+```bash
+npm run build
+# or
+yarn build
+# or
+pnpm build
+```
+
+To start the production server locally:
+
+```bash
+npm start
+# or
+yarn start
+# or
+pnpm start
+```
+
+## Environment Variables
+
+This demo application doesn't require any environment variables. For production use, you may want to add:
+
+- API keys for external services
+- Database connection strings
+- Authentication configuration
+
+Create a `.env.local` file in the root directory for local development.
+
+## Customization
+
+### Styling
+
+The application uses Tailwind CSS v4. Customize styles in:
+- `app/globals.css` - Global styles and custom animations
+- Component files - Component-specific Tailwind classes
+
+### Mock Data
+
+Update mock data in `lib/data.ts`:
+- `SEEDED_METRICS` - Initial metrics data
+- `SEEDED_AUDIT_LOG` - Audit log entries
+- `SIMULATION_DATA` - Simulation data for impact review
+
+## Browser Support
+
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
+
+## License
+
+This is a demo application for showcase purposes.
+
+## Support
+
+For issues or questions, please refer to the Next.js documentation or Vercel deployment guides.
