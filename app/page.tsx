@@ -7,12 +7,15 @@ import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { EnterpriseDashboard } from '@/components/dashboard/EnterpriseDashboard';
 import { AIChatButton } from '@/components/ai-architect/AIChatButton';
 import { ChatContext } from '@/types/ai-architect';
+import { HelpButton } from '@/components/user-guide/HelpButton';
+import { UserGuideModal } from '@/components/user-guide/UserGuideModal';
 
 type View = 'arch' | 'onboarding' | 'dashboard';
 
 export default function Home() {
   const [view, setView] = useState<View>('dashboard');
   const [highlightedComponents, setHighlightedComponents] = useState<string[]>([]);
+  const [showGuide, setShowGuide] = useState(false);
 
   return (
     <div className="flex flex-col h-screen bg-black text-slate-100 font-sans overflow-hidden">
@@ -57,8 +60,11 @@ export default function Home() {
             <LayoutGrid size={14} /> Day 2: Enterprise
           </button>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>System Online
+        <div className="flex items-center gap-3">
+          <HelpButton onClick={() => setShowGuide(true)} />
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>System Online
+          </div>
         </div>
       </div>
 
@@ -87,6 +93,7 @@ export default function Home() {
         }}
         onHighlight={setHighlightedComponents}
       />
+      <UserGuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

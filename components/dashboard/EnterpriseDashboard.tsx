@@ -373,6 +373,9 @@ export function EnterpriseDashboard() {
                   <p className="text-slate-400 text-sm mt-1">
                     Enterprise-grade audit trail with compliance features and detailed tracking
                   </p>
+                  <p className="text-slate-500 text-xs mt-2 flex items-center gap-1">
+                    💡 Tip: Use filters to search, click "Details" to see full metadata, and toggle between Table/Timeline views
+                  </p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800">
