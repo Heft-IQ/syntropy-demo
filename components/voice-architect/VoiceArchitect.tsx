@@ -211,11 +211,29 @@ export function VoiceArchitect({ onClose, onSubmit, initialRule }: VoiceArchitec
             )}
 
             {step === 'processing' && (
-              <div className="flex flex-col items-center gap-4 animate-fade-in">
+              <div className="flex flex-col items-center gap-4 animate-fade-in w-full max-w-2xl">
                 <div className="w-12 h-12 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin"></div>
-                <div className="text-center">
+                <div className="text-center mb-6">
                   <h3 className="text-white font-medium text-lg">Processing Intent...</h3>
                   <span className="text-slate-400 text-sm">Mapping to FalkorDB Knowledge Graph</span>
+                </div>
+                <div className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span>Analyzing voice intent...</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span>Extracting entities: Operating Income, Depreciation, UK Subsidiaries</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                    <span>Querying knowledge graph for field mappings...</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <div className="w-2 h-2 rounded-full bg-slate-700"></div>
+                    <span>Generating Cube.js logic...</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -306,11 +324,48 @@ export function VoiceArchitect({ onClose, onSubmit, initialRule }: VoiceArchitec
         <div className="w-[350px] bg-slate-950/50 border-l border-slate-800 flex flex-col hidden lg:flex">
           <div className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-950/80">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-              <BookOpen size={14} /> {step === 'diff_view' ? 'Review Context' : 'Knowledge Base'}
+              <BookOpen size={14} />{' '}
+              {step === 'processing'
+                ? 'AI Insights'
+                : step === 'diff_view'
+                  ? 'Review Context'
+                  : 'Knowledge Base'}
             </span>
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {step === 'processing' && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl">
+                  <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm mb-2">
+                    <Sparkles size={16} /> AI Processing
+                  </div>
+                  <div className="space-y-2 text-xs text-indigo-200">
+                    <p>• Identified financial metric type: EBITDA variant</p>
+                    <p>• Found 3 related fields in knowledge graph</p>
+                    <p>• Applied business logic patterns from 12 similar metrics</p>
+                    <p>• Confidence: 92% based on field matches</p>
+                  </div>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                  <div className="text-xs font-bold text-slate-500 uppercase mb-2">Knowledge Graph Connections</div>
+                  <div className="space-y-2 text-xs text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                      <span>op_income → Operating Income (95% match)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                      <span>depreciation → Depreciation Expense (98% match)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
+                      <span>subsidiary → Subsidiary Location (87% match)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {step === 'diff_view' && simResults ? (
               <div className="space-y-4 animate-fade-in">
                 <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl">
@@ -340,11 +395,11 @@ export function VoiceArchitect({ onClose, onSubmit, initialRule }: VoiceArchitec
                   </div>
                 )}
               </div>
-            ) : (
+            ) : step !== 'processing' ? (
               <div className="text-center text-slate-500 text-sm mt-10">
                 {step === 'simulating' ? 'Calculating Impact...' : 'Speak to generate draft...'}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

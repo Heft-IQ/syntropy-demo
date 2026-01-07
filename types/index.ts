@@ -68,3 +68,65 @@ export interface FieldMapping {
   canonicalFieldId: string | null;
 }
 
+export type LineageNodeType = 'source_field' | 'canonical_field' | 'metric' | 'usage';
+
+export interface LineageNode {
+  id: string;
+  type: LineageNodeType;
+  label: string;
+  description?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface LineageEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  type: 'transformation' | 'mapping' | 'usage' | 'dependency';
+}
+
+export interface LineageData {
+  nodes: LineageNode[];
+  edges: LineageEdge[];
+}
+
+export interface SuccessMetric {
+  id: string;
+  label: string;
+  value: number | string;
+  unit?: string;
+  trend?: 'up' | 'down' | 'neutral';
+  trendValue?: number;
+  icon?: string;
+}
+
+export interface ActivityItem {
+  id: string;
+  type: 'metric_created' | 'metric_approved' | 'field_mapped' | 'mapping_accepted';
+  actor: string;
+  target: string;
+  timestamp: string;
+  details?: string;
+}
+
+export interface AIExplanation {
+  confidence: number;
+  breakdown: {
+    fieldNameSimilarity: number;
+    dataTypeMatch: number;
+    contextClues: number;
+    historicalPatterns?: number;
+  };
+  reasoning: string;
+  alternatives?: Array<{
+    canonicalFieldId: string;
+    confidence: number;
+    reason: string;
+  }>;
+  learningIndicator?: {
+    basedOnMappings: number;
+    improvement: number;
+  };
+}
+

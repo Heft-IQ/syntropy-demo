@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { CheckCircle, Search, Sparkles, X } from 'lucide-react';
+import { CheckCircle, Search, Sparkles, X, Info } from 'lucide-react';
 import { UnmatchedField, CanonicalField } from '@/types';
-import { CANONICAL_FIELDS } from '@/lib/data';
+import { CANONICAL_FIELDS, AI_EXPLANATIONS } from '@/lib/data';
+import { AIExplanationPanel } from '@/components/ai/AIExplanationPanel';
 
 interface FieldMappingStepProps {
   unmatchedFields: UnmatchedField[];
@@ -132,6 +133,16 @@ export function FieldMappingStep({
                     </button>
                   )}
                 </div>
+
+                {field.suggestedMapping && !isMapped && AI_EXPLANATIONS[field.id] && (
+                  <div className="mb-3">
+                    <AIExplanationPanel
+                      explanation={AI_EXPLANATIONS[field.id]}
+                      fieldName={field.sourceField}
+                      suggestedFieldName={field.suggestedMapping}
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   {selectedCanonical ? (

@@ -8,19 +8,24 @@ import {
   Eye,
   Edit3,
   Layers,
+  Zap,
+  Network,
 } from 'lucide-react';
 import { Metric, AuditLog, Draft } from '@/types';
 import { SEEDED_METRICS, SEEDED_AUDIT_LOG } from '@/lib/data';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { VoiceArchitect } from '@/components/voice-architect/VoiceArchitect';
 import { ImpactReviewModal } from './ImpactReviewModal';
+import { QuickWinsDashboard } from './QuickWinsDashboard';
+import { DataLineageView } from '@/components/lineage/DataLineageView';
 
 export function EnterpriseDashboard() {
-  const [activeTab, setActiveTab] = useState<'metrics' | 'audit'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'audit' | 'quickwins' | 'lineage'>('quickwins');
   const [userRole, setUserRole] = useState('Admin');
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [selectedMetricForEdit, setSelectedMetricForEdit] = useState<Metric | null>(null);
   const [reviewItem, setReviewItem] = useState<Metric | null>(null);
+  const [selectedLineageMetric, setSelectedLineageMetric] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<Metric[]>(SEEDED_METRICS);
   const [auditLog, setAuditLog] = useState<AuditLog[]>(SEEDED_AUDIT_LOG);
   const [filter, setFilter] = useState<'all' | 'active' | 'pending'>('all');
@@ -106,6 +111,18 @@ export function EnterpriseDashboard() {
             Knowledge Base
           </div>
           <button
+            onClick={() => setActiveTab('quickwins')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'quickwins'
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Zap size={18} /> Quick Wins
+            </div>
+          </button>
+          <button
             onClick={() => setActiveTab('metrics')}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'metrics'
@@ -121,6 +138,18 @@ export function EnterpriseDashboard() {
                 {pendingCount}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setActiveTab('lineage')}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'lineage'
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Network size={18} /> Data Lineage
+            </div>
           </button>
           <button
             onClick={() => setActiveTab('audit')}
@@ -151,7 +180,10 @@ export function EnterpriseDashboard() {
       <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
         <div className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/30 backdrop-blur-sm">
           <span className="text-white font-medium">
-            {activeTab === 'metrics' ? 'Semantic Layer' : 'System Audit Log'}
+            {activeTab === 'quickwins' && 'Quick Wins'}
+            {activeTab === 'metrics' && 'Semantic Layer'}
+            {activeTab === 'lineage' && 'Data Lineage'}
+            {activeTab === 'audit' && 'System Audit Log'}
           </span>
           <button
             onClick={() => setUserRole(userRole === 'Admin' ? 'Viewer' : 'Admin')}
@@ -162,6 +194,8 @@ export function EnterpriseDashboard() {
         </div>
 
         <div className="flex-1 overflow-auto p-6">
+          {activeTab === 'quickwins' && <QuickWinsDashboard />}
+          {activeTab === 'lineage' && <DataLineageView metricId={selectedLineageMetric || undefined} />}
           {activeTab === 'metrics' && (
             <div className="max-w-7xl mx-auto animate-fade-in">
               <div className="flex justify-between items-end mb-6">
@@ -236,6 +270,16 @@ export function EnterpriseDashboard() {
                           <StatusBadge status={m.status} />
                         </td>
                         <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedLineageMetric(m.id);
+                              setActiveTab('lineage');
+                            }}
+                            className="text-slate-500 hover:text-indigo-400 transition-colors p-2 rounded-lg hover:bg-slate-800"
+                            title="View Lineage"
+                          >
+                            <Network size={16} />
+                          </button>
                           {m.status === 'pending_approval' ? (
                             <button
                               onClick={() => setReviewItem(m)}
