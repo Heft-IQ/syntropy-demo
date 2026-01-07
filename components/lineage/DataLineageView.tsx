@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Database, Box, BarChart2, FileText, Search, X, ArrowRight } from 'lucide-react';
+import { Database, Box, BarChart2, FileText, Search, X, ArrowRight, ArrowDown } from 'lucide-react';
 import { LineageData, LineageNode, LineageNodeType } from '@/types';
 import { LINEAGE_DATA, SEEDED_METRICS } from '@/lib/data';
 
@@ -10,28 +10,39 @@ interface DataLineageViewProps {
   onClose?: () => void;
 }
 
-const nodeTypeConfig: Record<LineageNodeType, { color: string; icon: any; bgColor: string }> = {
+const nodeTypeConfig: Record<LineageNodeType, { color: string; icon: any; bgColor: string; borderColor: string }> = {
   source_field: {
     color: 'text-blue-400',
-    bgColor: 'bg-blue-500/10 border-blue-500/30',
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-blue-500/30',
     icon: Database,
   },
   canonical_field: {
     color: 'text-green-400',
-    bgColor: 'bg-green-500/10 border-green-500/30',
+    bgColor: 'bg-green-500/10',
+    borderColor: 'border-green-500/30',
     icon: Box,
   },
   metric: {
     color: 'text-purple-400',
-    bgColor: 'bg-purple-500/10 border-purple-500/30',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/30',
     icon: BarChart2,
   },
   usage: {
     color: 'text-orange-400',
-    bgColor: 'bg-orange-500/10 border-orange-500/30',
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-orange-500/30',
     icon: FileText,
   },
 };
+
+const levelConfig = [
+  { label: 'Source Fields', type: 'source_field' as LineageNodeType, spacing: 'gap-6' },
+  { label: 'Canonical Fields', type: 'canonical_field' as LineageNodeType, spacing: 'gap-8' },
+  { label: 'Metrics', type: 'metric' as LineageNodeType, spacing: 'gap-8' },
+  { label: 'Usage', type: 'usage' as LineageNodeType, spacing: 'gap-6' },
+];
 
 export function DataLineageView({ metricId, onClose }: DataLineageViewProps) {
   const [selectedMetric, setSelectedMetric] = useState<string>(metricId || 'm_001');
@@ -49,15 +60,6 @@ export function DataLineageView({ metricId, onClose }: DataLineageViewProps) {
     );
   }, [searchQuery]);
 
-  const getNodePosition = (index: number, total: number, level: number) => {
-    const spacing = 200;
-    const startX = 100;
-    const startY = 100 + level * 150;
-    const totalWidth = (total - 1) * spacing;
-    const x = startX + (index * spacing - totalWidth / 2);
-    return { x, y: startY };
-  };
-
   const nodesByLevel = useMemo(() => {
     const levels: Record<number, LineageNode[]> = { 0: [], 1: [], 2: [], 3: [] };
     lineageData.nodes.forEach((node) => {
@@ -69,27 +71,20 @@ export function DataLineageView({ metricId, onClose }: DataLineageViewProps) {
     return levels;
   }, [lineageData]);
 
-  const getEdgePath = (sourceId: string, targetId: string) => {
-    const sourceNode = lineageData.nodes.find((n) => n.id === sourceId);
-    const targetNode = lineageData.nodes.find((n) => n.id === targetId);
-    if (!sourceNode || !targetNode) return '';
-
-    const sourceLevel = sourceNode.type === 'source_field' ? 0 : sourceNode.type === 'canonical_field' ? 1 : sourceNode.type === 'metric' ? 2 : 3;
-    const targetLevel = targetNode.type === 'source_field' ? 0 : targetNode.type === 'canonical_field' ? 1 : targetNode.type === 'metric' ? 2 : 3;
-
-    const sourceIndex = nodesByLevel[sourceLevel].findIndex((n) => n.id === sourceId);
-    const targetIndex = nodesByLevel[targetLevel].findIndex((n) => n.id === targetId);
-
-    const sourcePos = getNodePosition(sourceIndex, nodesByLevel[sourceLevel].length, sourceLevel);
-    const targetPos = getNodePosition(targetIndex, nodesByLevel[targetLevel].length, targetLevel);
-
-    const midX = (sourcePos.x + targetPos.x) / 2;
-    return `M ${sourcePos.x + 80} ${sourcePos.y + 40} L ${midX} ${sourcePos.y + 40} L ${midX} ${targetPos.y + 40} L ${targetPos.x + 80} ${targetPos.y + 40}`;
+  const getConnectedNodes = (nodeId: string, direction: 'source' | 'target') => {
+    return lineageData.edges
+      .filter((e) => (direction === 'source' ? e.source === nodeId : e.target === nodeId))
+      .map((e) => {
+        const connectedId = direction === 'source' ? e.target : e.source;
+        const connectedNode = lineageData.nodes.find((n) => n.id === connectedId);
+        return connectedNode ? { node: connectedNode, edge: e } : null;
+      })
+      .filter((item): item is { node: LineageNode; edge: any } => item !== null);
   };
 
   return (
     <div className="h-full flex flex-col bg-slate-950 text-slate-100">
-      <div className="border-b border-slate-800 p-6 bg-slate-900/50">
+      <div className="border-b border-slate-800 p-6 bg-slate-900/50 shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold text-white mb-1">Data Lineage</h2>
@@ -127,93 +122,116 @@ export function DataLineageView({ metricId, onClose }: DataLineageViewProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-8 relative">
-        <div className="relative" style={{ minWidth: '1200px', minHeight: '600px' }}>
-          <svg className="absolute inset-0 w-full h-full" style={{ minWidth: '1200px', minHeight: '600px' }}>
-            <defs>
-              <marker
-                id="arrowhead"
-                markerWidth="10"
-                markerHeight="10"
-                refX="9"
-                refY="3"
-                orient="auto"
-                markerUnits="strokeWidth"
-              >
-                <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
-              </marker>
-            </defs>
-
-            {lineageData.edges.map((edge) => {
-              const path = getEdgePath(edge.source, edge.target);
-              return (
-                <g key={edge.id}>
-                  <path
-                    d={path}
-                    stroke="#475569"
-                    strokeWidth="2"
-                    fill="none"
-                    markerEnd="url(#arrowhead)"
-                    className="hover:stroke-indigo-500 transition-colors"
-                  />
-                </g>
-              );
-            })}
-          </svg>
-
-          {Object.entries(nodesByLevel).map(([level, nodes]) => {
+      <div className="flex-1 overflow-auto p-8">
+        <div className="max-w-7xl mx-auto space-y-12">
+          {levelConfig.map((level, levelIndex) => {
+            const nodes = nodesByLevel[levelIndex];
             if (nodes.length === 0) return null;
-            const levelNum = parseInt(level);
+
             return (
-              <div key={level} className="relative">
-                <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-800"></div>
-                <div className="absolute left-0 top-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {levelNum === 0 && 'Source Fields'}
-                  {levelNum === 1 && 'Canonical Fields'}
-                  {levelNum === 2 && 'Metrics'}
-                  {levelNum === 3 && 'Usage'}
+              <div key={levelIndex} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">{level.label}</div>
+                  <div className="flex-1 h-px bg-slate-800"></div>
                 </div>
-                <div className="flex gap-4 ml-20" style={{ marginTop: `${100 + levelNum * 150}px` }}>
-                  {nodes.map((node, index) => {
+
+                <div className={`flex flex-wrap items-start justify-center ${level.spacing} min-h-[120px]`}>
+                  {nodes.map((node) => {
                     const config = nodeTypeConfig[node.type];
                     const Icon = config.icon;
                     const isSelected = selectedNode === node.id;
-                    const pos = getNodePosition(index, nodes.length, levelNum);
+                    const sources = getConnectedNodes(node.id, 'source');
+                    const targets = getConnectedNodes(node.id, 'target');
 
                     return (
-                      <div
-                        key={node.id}
-                        className="absolute cursor-pointer transform transition-all hover:scale-105"
-                        style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
-                        onClick={() => setSelectedNode(isSelected ? null : node.id)}
-                      >
+                      <div key={node.id} className="relative group">
                         <div
-                          className={`w-40 border-2 rounded-xl p-4 transition-all ${
+                          className={`min-w-[180px] border-2 rounded-xl p-4 cursor-pointer transition-all ${
                             isSelected
-                              ? 'border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/20'
-                              : config.bgColor
+                              ? 'border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/20 scale-105'
+                              : `${config.borderColor} ${config.bgColor} hover:scale-105 hover:shadow-lg`
                           }`}
+                          onClick={() => setSelectedNode(isSelected ? null : node.id)}
                         >
                           <div className="flex items-center gap-2 mb-2">
-                            <Icon size={16} className={config.color} />
-                            <span className="text-xs font-bold text-slate-400 uppercase">{node.type.replace('_', ' ')}</span>
+                            <Icon size={18} className={config.color} />
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+                              {node.type.replace('_', ' ')}
+                            </span>
                           </div>
-                          <div className="text-sm font-bold text-white mb-1 truncate">{node.label}</div>
+                          <div className="text-sm font-bold text-white mb-1 break-words">{node.label}</div>
                           {node.description && (
-                            <div className="text-xs text-slate-400 truncate">{node.description}</div>
+                            <div className="text-xs text-slate-400 break-words line-clamp-2">{node.description}</div>
+                          )}
+                          {node.metadata?.table && (
+                            <div className="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-800">
+                              Table: {node.metadata.table}
+                            </div>
                           )}
                         </div>
+
+                        {/* Connection indicators */}
+                        {sources.length > 0 && (
+                          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-full px-2 py-0.5">
+                              <ArrowDown size={10} className="text-slate-500" />
+                              <span className="text-[10px] text-slate-400">{sources.length}</span>
+                            </div>
+                          </div>
+                        )}
+                        {targets.length > 0 && (
+                          <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2">
+                            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-full px-2 py-0.5">
+                              <ArrowDown size={10} className="text-slate-500" />
+                              <span className="text-[10px] text-slate-400">{targets.length}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
+
+                {/* Connection lines between levels */}
+                {levelIndex < levelConfig.length - 1 && (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="flex items-center gap-8">
+                      {nodes.map((node) => {
+                        const targets = getConnectedNodes(node.id, 'target');
+                        if (targets.length === 0) return null;
+
+                        return (
+                          <div key={node.id} className="flex flex-col items-center gap-2">
+                            {targets.map(({ node: target, edge }) => {
+                              const targetLevel = levelConfig.findIndex((l) => l.type === target.type);
+                              if (targetLevel !== levelIndex + 1) return null;
+
+                              return (
+                                <div
+                                  key={edge.id}
+                                  className="flex flex-col items-center gap-1 text-xs text-slate-500"
+                                  title={edge.label}
+                                >
+                                  <ArrowDown size={16} className="text-slate-600" />
+                                  <span className="text-[10px] max-w-[100px] text-center truncate">{edge.label}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
+      </div>
 
-        {selectedNode && (
-          <div className="absolute bottom-6 left-6 right-6 bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-2xl">
+      {selectedNode && (
+        <div className="border-t border-slate-800 bg-slate-900/50 p-6 shrink-0">
+          <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">Node Details</h3>
               <button
@@ -228,54 +246,81 @@ export function DataLineageView({ metricId, onClose }: DataLineageViewProps) {
               if (!node) return null;
               const config = nodeTypeConfig[node.type];
               const Icon = config.icon;
+              const sources = getConnectedNodes(selectedNode, 'source');
+              const targets = getConnectedNodes(selectedNode, 'target');
 
               return (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Icon size={20} className={config.color} />
-                    <span className="text-sm font-medium text-white">{node.label}</span>
-                    <span className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">{node.type}</span>
-                  </div>
-                  {node.description && <p className="text-sm text-slate-300 mb-3">{node.description}</p>}
-                  {node.metadata && (
-                    <div className="space-y-2">
-                      {Object.entries(node.metadata).map(([key, value]) => (
-                        <div key={key} className="flex items-center gap-2 text-xs">
-                          <span className="text-slate-500">{key}:</span>
-                          <span className="text-slate-300">{String(value)}</span>
-                        </div>
-                      ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Icon size={20} className={config.color} />
+                      <span className="text-sm font-medium text-white">{node.label}</span>
+                      <span className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">{node.type}</span>
                     </div>
-                  )}
-                  <div className="mt-4 pt-4 border-t border-slate-800">
-                    <div className="text-xs text-slate-500 mb-2">Connected To:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {lineageData.edges
-                        .filter((e) => e.source === selectedNode || e.target === selectedNode)
-                        .map((edge) => {
-                          const connectedNode = lineageData.nodes.find(
-                            (n) => n.id === (edge.source === selectedNode ? edge.target : edge.source)
-                          );
-                          if (!connectedNode) return null;
-                          return (
+                    {node.description && <p className="text-sm text-slate-300 mb-3">{node.description}</p>}
+                    {node.metadata && (
+                      <div className="space-y-2">
+                        {Object.entries(node.metadata).map(([key, value]) => (
+                          <div key={key} className="flex items-center gap-2 text-xs">
+                            <span className="text-slate-500">{key}:</span>
+                            <span className="text-slate-300">{String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    {sources.length > 0 && (
+                      <div>
+                        <div className="text-xs text-slate-500 mb-2 font-bold uppercase">Connected From:</div>
+                        <div className="space-y-2">
+                          {sources.map(({ node: source, edge }) => (
                             <div
                               key={edge.id}
-                              className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-xs text-slate-300"
+                              className="flex items-center gap-2 p-2 bg-slate-950 border border-slate-800 rounded-lg"
                             >
-                              <ArrowRight size={12} />
-                              {connectedNode.label}
+                              <ArrowRight size={14} className="text-slate-500" />
+                              <div className="flex-1">
+                                <div className="text-sm font-medium text-white">{source.label}</div>
+                                {edge.label && (
+                                  <div className="text-xs text-slate-400 mt-0.5">{edge.label}</div>
+                                )}
+                              </div>
                             </div>
-                          );
-                        })}
-                    </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {targets.length > 0 && (
+                      <div>
+                        <div className="text-xs text-slate-500 mb-2 font-bold uppercase">Connected To:</div>
+                        <div className="space-y-2">
+                          {targets.map(({ node: target, edge }) => (
+                            <div
+                              key={edge.id}
+                              className="flex items-center gap-2 p-2 bg-slate-950 border border-slate-800 rounded-lg"
+                            >
+                              <ArrowRight size={14} className="text-slate-500" />
+                              <div className="flex-1">
+                                <div className="text-sm font-medium text-white">{target.label}</div>
+                                {edge.label && (
+                                  <div className="text-xs text-slate-400 mt-0.5">{edge.label}</div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })()}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
-

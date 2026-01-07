@@ -179,35 +179,97 @@ export const CANONICAL_FIELDS: CanonicalField[] = [
 export const LINEAGE_DATA: Record<string, LineageData> = {
   'm_001': {
     nodes: [
+      // Source Fields
       { id: 'sf_gross', type: 'source_field', label: 'gross_sales', description: 'transactions.gross_sales', metadata: { table: 'transactions', type: 'decimal' } },
       { id: 'sf_returns', type: 'source_field', label: 'returns', description: 'transactions.returns', metadata: { table: 'transactions', type: 'decimal' } },
       { id: 'sf_tax', type: 'source_field', label: 'tax', description: 'transactions.tax', metadata: { table: 'transactions', type: 'decimal' } },
-      { id: 'cf_revenue', type: 'canonical_field', label: 'revenue', description: 'Canonical Revenue Field' },
+      { id: 'sf_discount', type: 'source_field', label: 'discount_amount', description: 'transactions.discount', metadata: { table: 'transactions', type: 'decimal' } },
+      { id: 'sf_shipping', type: 'source_field', label: 'shipping_cost', description: 'transactions.shipping', metadata: { table: 'transactions', type: 'decimal' } },
+      // Canonical Fields
+      { id: 'cf_revenue', type: 'canonical_field', label: 'revenue', description: 'Canonical Revenue Field', metadata: { category: 'revenue' } },
+      { id: 'cf_returns', type: 'canonical_field', label: 'returns', description: 'Canonical Returns Field', metadata: { category: 'revenue' } },
+      { id: 'cf_tax', type: 'canonical_field', label: 'tax', description: 'Canonical Tax Field', metadata: { category: 'financial' } },
+      // Metric
       { id: 'm_001', type: 'metric', label: 'Net Revenue', description: 'Gross Sales - Returns - Tax' },
+      // Usage
       { id: 'usage_dash', type: 'usage', label: 'Executive Dashboard', description: 'Q4 Revenue Report' },
+      { id: 'usage_report', type: 'usage', label: 'Monthly P&L Report', description: 'Financial Statements' },
+      { id: 'usage_api', type: 'usage', label: 'Revenue API', description: 'External API Endpoint' },
     ],
     edges: [
-      { id: 'e1', source: 'sf_gross', target: 'cf_revenue', type: 'mapping', label: 'Auto-mapped' },
-      { id: 'e2', source: 'sf_returns', target: 'cf_revenue', type: 'mapping', label: 'Auto-mapped' },
-      { id: 'e3', source: 'sf_tax', target: 'cf_revenue', type: 'mapping', label: 'Auto-mapped' },
-      { id: 'e4', source: 'cf_revenue', target: 'm_001', type: 'transformation', label: 'Calculation' },
-      { id: 'e5', source: 'm_001', target: 'usage_dash', type: 'usage', label: 'Used in' },
+      { id: 'e1', source: 'sf_gross', target: 'cf_revenue', type: 'mapping', label: 'Auto-mapped (95%)' },
+      { id: 'e2', source: 'sf_returns', target: 'cf_returns', type: 'mapping', label: 'Auto-mapped (98%)' },
+      { id: 'e3', source: 'sf_tax', target: 'cf_tax', type: 'mapping', label: 'Auto-mapped (100%)' },
+      { id: 'e4', source: 'sf_discount', target: 'cf_revenue', type: 'mapping', label: 'Auto-mapped (87%)' },
+      { id: 'e5', source: 'cf_revenue', target: 'm_001', type: 'transformation', label: 'Calculation' },
+      { id: 'e6', source: 'cf_returns', target: 'm_001', type: 'transformation', label: 'Subtraction' },
+      { id: 'e7', source: 'cf_tax', target: 'm_001', type: 'transformation', label: 'Subtraction' },
+      { id: 'e8', source: 'm_001', target: 'usage_dash', type: 'usage', label: 'Used in' },
+      { id: 'e9', source: 'm_001', target: 'usage_report', type: 'usage', label: 'Used in' },
+      { id: 'e10', source: 'm_001', target: 'usage_api', type: 'usage', label: 'Exposed via' },
     ],
   },
   'm_002': {
     nodes: [
+      // Source Fields
       { id: 'sf_cogs', type: 'source_field', label: 'cogs', description: 'products.cost_of_goods', metadata: { table: 'products', type: 'decimal' } },
-      { id: 'cf_revenue', type: 'canonical_field', label: 'revenue', description: 'Canonical Revenue Field' },
-      { id: 'cf_cogs', type: 'canonical_field', label: 'cost_of_goods', description: 'Canonical COGS Field' },
+      { id: 'sf_inventory', type: 'source_field', label: 'inventory_cost', description: 'products.inventory_value', metadata: { table: 'products', type: 'decimal' } },
+      { id: 'sf_labor', type: 'source_field', label: 'labor_cost', description: 'products.manufacturing_labor', metadata: { table: 'products', type: 'decimal' } },
+      { id: 'sf_materials', type: 'source_field', label: 'material_cost', description: 'products.raw_materials', metadata: { table: 'products', type: 'decimal' } },
+      { id: 'sf_shipping_cost', type: 'source_field', label: 'shipping_cost', description: 'orders.shipping_fee', metadata: { table: 'orders', type: 'decimal' } },
+      // Canonical Fields
+      { id: 'cf_revenue', type: 'canonical_field', label: 'revenue', description: 'Canonical Revenue Field', metadata: { category: 'revenue' } },
+      { id: 'cf_cogs', type: 'canonical_field', label: 'cost_of_goods', description: 'Canonical COGS Field', metadata: { category: 'financial' } },
+      { id: 'cf_shipping', type: 'canonical_field', label: 'shipping_cost', description: 'Canonical Shipping Field', metadata: { category: 'financial' } },
+      // Metrics
       { id: 'm_001', type: 'metric', label: 'Net Revenue', description: 'Used as input' },
       { id: 'm_002', type: 'metric', label: 'Gross Margin', description: 'Net Revenue - COGS' },
+      // Usage
       { id: 'usage_finance', type: 'usage', label: 'Finance Dashboard', description: 'Margin Analysis' },
+      { id: 'usage_ops', type: 'usage', label: 'Operations Dashboard', description: 'Cost Tracking' },
     ],
     edges: [
-      { id: 'e1', source: 'sf_cogs', target: 'cf_cogs', type: 'mapping', label: 'Auto-mapped' },
-      { id: 'e2', source: 'm_001', target: 'm_002', type: 'dependency', label: 'Depends on' },
-      { id: 'e3', source: 'cf_cogs', target: 'm_002', type: 'transformation', label: 'Calculation' },
-      { id: 'e4', source: 'm_002', target: 'usage_finance', type: 'usage', label: 'Used in' },
+      { id: 'e1', source: 'sf_cogs', target: 'cf_cogs', type: 'mapping', label: 'Auto-mapped (100%)' },
+      { id: 'e2', source: 'sf_inventory', target: 'cf_cogs', type: 'mapping', label: 'Auto-mapped (92%)' },
+      { id: 'e3', source: 'sf_labor', target: 'cf_cogs', type: 'mapping', label: 'Auto-mapped (88%)' },
+      { id: 'e4', source: 'sf_materials', target: 'cf_cogs', type: 'mapping', label: 'Auto-mapped (95%)' },
+      { id: 'e5', source: 'sf_shipping_cost', target: 'cf_shipping', type: 'mapping', label: 'Auto-mapped (98%)' },
+      { id: 'e6', source: 'm_001', target: 'm_002', type: 'dependency', label: 'Depends on' },
+      { id: 'e7', source: 'cf_cogs', target: 'm_002', type: 'transformation', label: 'Subtraction' },
+      { id: 'e8', source: 'm_002', target: 'usage_finance', type: 'usage', label: 'Used in' },
+      { id: 'e9', source: 'm_002', target: 'usage_ops', type: 'usage', label: 'Used in' },
+    ],
+  },
+  'm_003': {
+    nodes: [
+      // Source Fields
+      { id: 'sf_status', type: 'source_field', label: 'subscription_status', description: 'subscriptions.status', metadata: { table: 'subscriptions', type: 'varchar' } },
+      { id: 'sf_cancelled', type: 'source_field', label: 'is_cancelled', description: 'subscriptions.cancelled', metadata: { table: 'subscriptions', type: 'boolean' } },
+      { id: 'sf_plan_type', type: 'source_field', label: 'plan_type', description: 'subscriptions.plan', metadata: { table: 'subscriptions', type: 'varchar' } },
+      { id: 'sf_trial', type: 'source_field', label: 'is_trial', description: 'subscriptions.trial_flag', metadata: { table: 'subscriptions', type: 'boolean' } },
+      { id: 'sf_grace', type: 'source_field', label: 'grace_period', description: 'subscriptions.grace_period_status', metadata: { table: 'subscriptions', type: 'varchar' } },
+      { id: 'sf_total_subs', type: 'source_field', label: 'total_subscriptions', description: 'subscriptions.count', metadata: { table: 'subscriptions', type: 'integer' } },
+      // Canonical Fields
+      { id: 'cf_status', type: 'canonical_field', label: 'subscription_status', description: 'Canonical Status Field', metadata: { category: 'subscription' } },
+      { id: 'cf_plan_type', type: 'canonical_field', label: 'plan_type', description: 'Canonical Plan Type Field', metadata: { category: 'subscription' } },
+      { id: 'cf_cancellation', type: 'canonical_field', label: 'cancellation', description: 'Canonical Cancellation Field', metadata: { category: 'subscription' } },
+      // Metric
+      { id: 'm_003', type: 'metric', label: 'Churn Rate (Strict)', description: 'Cancellations / Total Subs' },
+      // Usage
+      { id: 'usage_product', type: 'usage', label: 'Product Dashboard', description: 'Churn Analysis' },
+      { id: 'usage_alert', type: 'usage', label: 'Churn Alert System', description: 'Real-time Monitoring' },
+    ],
+    edges: [
+      { id: 'e1', source: 'sf_status', target: 'cf_status', type: 'mapping', label: 'Auto-mapped (93%)' },
+      { id: 'e2', source: 'sf_cancelled', target: 'cf_cancellation', type: 'mapping', label: 'Auto-mapped (97%)' },
+      { id: 'e3', source: 'sf_plan_type', target: 'cf_plan_type', type: 'mapping', label: 'Auto-mapped (100%)' },
+      { id: 'e4', source: 'sf_trial', target: 'cf_plan_type', type: 'mapping', label: 'Filter: Exclude' },
+      { id: 'e5', source: 'sf_grace', target: 'cf_status', type: 'mapping', label: 'Filter: Exclude' },
+      { id: 'e6', source: 'cf_cancellation', target: 'm_003', type: 'transformation', label: 'Count Filter' },
+      { id: 'e7', source: 'cf_plan_type', target: 'm_003', type: 'transformation', label: 'Filter Applied' },
+      { id: 'e8', source: 'sf_total_subs', target: 'm_003', type: 'transformation', label: 'Denominator' },
+      { id: 'e9', source: 'm_003', target: 'usage_product', type: 'usage', label: 'Used in' },
+      { id: 'e10', source: 'm_003', target: 'usage_alert', type: 'usage', label: 'Monitored by' },
     ],
   },
 };
