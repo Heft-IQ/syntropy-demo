@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { X, ChevronRight, ChevronLeft, SkipForward } from 'lucide-react';
 
 interface TourStep {

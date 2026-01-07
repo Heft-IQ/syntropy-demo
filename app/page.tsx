@@ -13,26 +13,26 @@ import { UserGuideModal } from '@/components/user-guide/UserGuideModal';
 import { OnboardingTour } from '@/components/education/OnboardingTour';
 import { UserButton } from '@/components/auth/UserButton';
 import { SignInButton } from '@/components/auth/SignInButton';
+import { FirstTimeWelcome } from '@/components/auth/FirstTimeWelcome';
+import { useFirstTimeUser } from '@/hooks/useFirstTimeUser';
 
 type View = 'arch' | 'onboarding' | 'dashboard';
 
 export default function Home() {
   const { isSignedIn, isLoaded, user } = useUser();
+  const { isFirstTime, shouldShowTour } = useFirstTimeUser();
   const [view, setView] = useState<View>('dashboard');
   const [highlightedComponents, setHighlightedComponents] = useState<string[]>([]);
   const [showGuide, setShowGuide] = useState(false);
   const [showTour, setShowTour] = useState(false);
 
-  // Check if user has seen tour
+  // Show tour for first-time users or users who haven't seen it
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      const hasSeenTour = localStorage.getItem('syntropy-tour-seen') === 'true';
-      if (!hasSeenTour) {
-        // Show tour after a short delay
-        setTimeout(() => setShowTour(true), 1000);
-      }
+    if (isLoaded && isSignedIn && shouldShowTour) {
+      // Show tour after a short delay
+      setTimeout(() => setShowTour(true), 1000);
     }
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, shouldShowTour]);
 
   return (
     <div className="flex flex-col h-screen bg-black text-slate-100 font-sans overflow-hidden">
@@ -124,15 +124,42 @@ export default function Home() {
         />
       </div>
       <UserGuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
+      <FirstTimeWelcome />
       <OnboardingTour
         isOpen={showTour}
-        onClose={() => {
+        onClose={async () => {
           setShowTour(false);
-          localStorage.setItem('syntropy-tour-seen', 'true');
+          // Update Clerk metadata to mark tour as seen
+          if (user?.id) {
+            try {
+              await fetch('/api/user/metadata', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hasSeenTour: true }),
+              });
+            } catch (error) {
+              console.error('Failed to update tour status:', error);
+              // Fallback to localStorage
+              localStorage.setItem(`tour-seen-${user.id}`, 'true');
+            }
+          }
         }}
-        onComplete={() => {
+        onComplete={async () => {
           setShowTour(false);
-          localStorage.setItem('syntropy-tour-seen', 'true');
+          // Update Clerk metadata to mark tour as seen
+          if (user?.id) {
+            try {
+              await fetch('/api/user/metadata', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hasSeenTour: true }),
+              });
+            } catch (error) {
+              console.error('Failed to update tour status:', error);
+              // Fallback to localStorage
+              localStorage.setItem(`tour-seen-${user.id}`, 'true');
+            }
+          }
         }}
       />
     </div>
