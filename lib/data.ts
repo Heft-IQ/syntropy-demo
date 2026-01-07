@@ -10,6 +10,7 @@ import {
   SuccessMetric,
   ActivityItem,
   AIExplanation,
+  ComponentDemo,
 } from '@/types';
 
 export const SEEDED_METRICS: Metric[] = [
@@ -407,6 +408,352 @@ export const AI_EXPLANATIONS: Record<string, AIExplanation> = {
     learningIndicator: {
       basedOnMappings: 142,
       improvement: 8,
+    },
+  },
+};
+
+export const COMPONENT_DEMOS: Record<string, ComponentDemo> = {
+  erp: {
+    id: 'erp',
+    name: 'ERP (NetSuite)',
+    description: 'Enterprise Resource Planning system providing transactional data',
+    responsibility: 'Source system that provides raw business data via REST API',
+    examples: {
+      data: {
+        title: 'Sample API Response',
+        language: 'json',
+        content: `{
+  "transactions": [
+    {
+      "id": "TXN-001",
+      "date": "2024-01-15",
+      "gross_sales": 125000.00,
+      "returns": 2500.00,
+      "tax": 10250.00,
+      "customer_id": "CUST-1234"
+    }
+  ],
+  "total_records": 15420,
+  "extracted_at": "2024-01-15T10:30:00Z"
+}`,
+      },
+      process: {
+        title: 'Data Extraction Process',
+        steps: [
+          { step: '1. Authenticate', description: 'OAuth 2.0 token exchange with NetSuite API' },
+          { step: '2. Query', description: 'Fetch transactions from last 24 hours' },
+          { step: '3. Paginate', description: 'Handle large result sets with cursor-based pagination' },
+          { step: '4. Transform', description: 'Normalize JSON structure for dlt pipeline' },
+        ],
+      },
+      metrics: {
+        title: 'Extraction Metrics',
+        stats: [
+          { label: 'Records Extracted', value: '15,420', unit: 'rows' },
+          { label: 'Tables Scanned', value: 8, unit: 'tables' },
+          { label: 'API Latency', value: '245', unit: 'ms' },
+          { label: 'Data Size', value: '12.4', unit: 'MB' },
+        ],
+      },
+    },
+  },
+  worker: {
+    id: 'worker',
+    name: 'dlt Worker',
+    description: 'Data load tool worker that normalizes and transforms data',
+    responsibility: 'ETL pipeline that standardizes data formats and schemas',
+    examples: {
+      data: {
+        title: 'Transformation Example',
+        language: 'json',
+        content: `Before (Raw):
+{
+  "cust_id": "1234",
+  "order_date": "2024-01-15T10:30:00",
+  "amt": 1250.50
+}
+
+After (Normalized):
+{
+  "customer_id": "1234",
+  "order_date": "2024-01-15",
+  "amount": 1250.50,
+  "currency": "USD",
+  "schema_version": "v2.1"
+}`,
+      },
+      process: {
+        title: 'Normalization Pipeline',
+        steps: [
+          { step: '1. Schema Detection', description: 'Auto-detect field types and constraints' },
+          { step: '2. Field Mapping', description: 'Map to canonical field names' },
+          { step: '3. Data Validation', description: 'Validate data types and ranges' },
+          { step: '4. Format Standardization', description: 'Standardize dates, currencies, etc.' },
+        ],
+      },
+      metrics: {
+        title: 'Processing Metrics',
+        stats: [
+          { label: 'Records Processed', value: '15,420', unit: 'rows' },
+          { label: 'Transformation Rate', value: '1,200', unit: 'rows/sec' },
+          { label: 'Success Rate', value: '99.8', unit: '%' },
+          { label: 'Processing Time', value: '12.8', unit: 'sec' },
+        ],
+      },
+    },
+  },
+  s3: {
+    id: 's3',
+    name: 'S3 Bronze',
+    description: 'Raw data lake storage in Parquet format',
+    responsibility: 'Immutable storage layer for raw ingested data',
+    examples: {
+      data: {
+        title: 'Data Lake Structure',
+        language: 'text',
+        content: `s3://syntropy-bronze/
+  ├── transactions/
+  │   ├── year=2024/
+  │   │   ├── month=01/
+  │   │   │   ├── day=15/
+  │   │   │   │   ├── part-00000.parquet (2.1GB)
+  │   │   │   │   └── part-00001.parquet (1.8GB)
+  │   │   │   └── day=16/
+  │   │   └── month=02/
+  └── customers/
+      └── year=2024/`,
+      },
+      process: {
+        title: 'Storage Process',
+        steps: [
+          { step: '1. Partition', description: 'Organize by date partitions (year/month/day)' },
+          { step: '2. Compress', description: 'Convert to Parquet format with Snappy compression' },
+          { step: '3. Store', description: 'Write to S3 with versioning enabled' },
+          { step: '4. Index', description: 'Create metadata index for fast queries' },
+        ],
+      },
+      metrics: {
+        title: 'Storage Metrics',
+        stats: [
+          { label: 'Total Size', value: '3.2', unit: 'TB' },
+          { label: 'Partitions', value: '1,247', unit: 'partitions' },
+          { label: 'Files', value: '8,934', unit: 'files' },
+          { label: 'Compression Ratio', value: '4.2', unit: 'x' },
+        ],
+      },
+    },
+  },
+  tinybird: {
+    id: 'tinybird',
+    name: 'Tinybird (Silver/Gold)',
+    description: 'Real-time analytics database for querying processed data',
+    responsibility: 'High-performance columnar database for analytical queries',
+    examples: {
+      data: {
+        title: 'Query Example',
+        language: 'sql',
+        content: `SELECT 
+  date_trunc('month', order_date) as month,
+  SUM(gross_sales) as revenue,
+  COUNT(*) as orders
+FROM transactions
+WHERE order_date >= '2024-01-01'
+GROUP BY month
+ORDER BY month DESC
+LIMIT 12`,
+      },
+      process: {
+        title: 'Query Execution',
+        steps: [
+          { step: '1. Parse Query', description: 'Validate SQL syntax and permissions' },
+          { step: '2. Optimize', description: 'Generate optimal execution plan' },
+          { step: '3. Execute', description: 'Scan partitions in parallel' },
+          { step: '4. Aggregate', description: 'Compute aggregations in-memory' },
+        ],
+      },
+      metrics: {
+        title: 'Performance Metrics',
+        stats: [
+          { label: 'Query Latency', value: '45', unit: 'ms' },
+          { label: 'Rows Scanned', value: '1.2M', unit: 'rows' },
+          { label: 'Cache Hit Rate', value: '87', unit: '%' },
+          { label: 'Throughput', value: '2,400', unit: 'qps' },
+        ],
+      },
+    },
+  },
+  user: {
+    id: 'user',
+    name: 'User / Dashboard',
+    description: 'End-user interface for accessing metrics and insights',
+    responsibility: 'Frontend application for business users to query and visualize data',
+    examples: {
+      data: {
+        title: 'User Request',
+        language: 'json',
+        content: `{
+  "metric": "Net Revenue",
+  "filters": {
+    "date_range": "2024-Q1",
+    "region": "North America"
+  },
+  "granularity": "monthly",
+  "format": "chart"
+}`,
+      },
+      process: {
+        title: 'User Interaction Flow',
+        steps: [
+          { step: '1. Select Metric', description: 'User chooses metric from dashboard' },
+          { step: '2. Apply Filters', description: 'User sets date range and filters' },
+          { step: '3. Request Data', description: 'Frontend sends query to Cube Gateway' },
+          { step: '4. Display Results', description: 'Render chart/table with results' },
+        ],
+      },
+      metrics: {
+        title: 'Usage Metrics',
+        stats: [
+          { label: 'Active Users', value: '142', unit: 'users' },
+          { label: 'Queries Today', value: '8,934', unit: 'queries' },
+          { label: 'Avg Session', value: '12.5', unit: 'min' },
+          { label: 'Metrics Viewed', value: '67', unit: 'metrics' },
+        ],
+      },
+    },
+  },
+  clerk: {
+    id: 'clerk',
+    name: 'Clerk Auth',
+    description: 'Authentication and authorization service',
+    responsibility: 'Manages user sessions, JWT tokens, and role-based permissions',
+    examples: {
+      data: {
+        title: 'JWT Token Structure',
+        language: 'json',
+        content: `{
+  "header": {
+    "alg": "RS256",
+    "typ": "JWT"
+  },
+  "payload": {
+    "user_id": "user_abc123",
+    "email": "alice@acme.com",
+    "role": "CFO",
+    "permissions": [
+      "metrics:read",
+      "metrics:approve",
+      "metrics:create"
+    ],
+    "exp": 1705312800
+  }
+}`,
+      },
+      process: {
+        title: 'Authentication Flow',
+        steps: [
+          { step: '1. Login', description: 'User authenticates with credentials' },
+          { step: '2. Validate', description: 'Verify credentials and MFA if enabled' },
+          { step: '3. Issue Token', description: 'Generate JWT with user claims' },
+          { step: '4. Session', description: 'Create session and set cookies' },
+        ],
+      },
+      metrics: {
+        title: 'Auth Metrics',
+        stats: [
+          { label: 'Active Sessions', value: '142', unit: 'sessions' },
+          { label: 'Auth Requests', value: '1,247', unit: 'requests' },
+          { label: 'Success Rate', value: '99.2', unit: '%' },
+          { label: 'Avg Auth Time', value: '120', unit: 'ms' },
+        ],
+      },
+    },
+  },
+  cube: {
+    id: 'cube',
+    name: 'Cube Gateway',
+    description: 'Semantic layer API gateway for metric queries',
+    responsibility: 'Resolves metric definitions, checks permissions, and routes queries',
+    examples: {
+      data: {
+        title: 'Query Resolution',
+        language: 'json',
+        content: `Request:
+{
+  "metric": "Net Revenue",
+  "filters": {"date": "2024-Q1"}
+}
+
+Resolved Query:
+{
+  "sql": "SELECT SUM(gross_sales - returns - tax) 
+          FROM transactions 
+          WHERE date >= '2024-01-01'",
+  "permissions": "granted",
+  "schema_source": "falkordb"
+}`,
+      },
+      process: {
+        title: 'Query Resolution Process',
+        steps: [
+          { step: '1. Authenticate', description: 'Validate JWT token with Clerk' },
+          { step: '2. Check Permissions', description: 'Verify user can access metric' },
+          { step: '3. Resolve Schema', description: 'Query FalkorDB for metric definition' },
+          { step: '4. Transform', description: 'Convert to SQL and route to Tinybird' },
+        ],
+      },
+      metrics: {
+        title: 'Gateway Metrics',
+        stats: [
+          { label: 'Queries Processed', value: '8,934', unit: 'queries' },
+          { label: 'Avg Latency', value: '12', unit: 'ms' },
+          { label: 'Cache Hit Rate', value: '78', unit: '%' },
+          { label: 'Error Rate', value: '0.1', unit: '%' },
+        ],
+      },
+    },
+  },
+  falkordb: {
+    id: 'falkordb',
+    name: 'FalkorDB Graph',
+    description: 'Knowledge graph storing metric definitions and relationships',
+    responsibility: 'Maintains semantic relationships between fields, metrics, and business logic',
+    examples: {
+      data: {
+        title: 'Graph Query (Cypher)',
+        language: 'cypher',
+        content: `MATCH (m:Metric {name: "Net Revenue"})
+-[:DEPENDS_ON]->(f:Field)
+-[:MAPS_TO]->(cf:CanonicalField)
+RETURN m, f, cf
+
+Result:
+{
+  "metric": "Net Revenue",
+  "fields": [
+    {"source": "gross_sales", "canonical": "revenue"},
+    {"source": "returns", "canonical": "returns"},
+    {"source": "tax", "canonical": "tax"}
+  ]
+}`,
+      },
+      process: {
+        title: 'Graph Traversal',
+        steps: [
+          { step: '1. Query Metric', description: 'Find metric node in graph' },
+          { step: '2. Traverse Edges', description: 'Follow DEPENDS_ON relationships' },
+          { step: '3. Resolve Fields', description: 'Get all connected source fields' },
+          { step: '4. Return Schema', description: 'Build complete metric definition' },
+        ],
+      },
+      metrics: {
+        title: 'Graph Metrics',
+        stats: [
+          { label: 'Nodes', value: '1,247', unit: 'nodes' },
+          { label: 'Edges', value: '3,892', unit: 'edges' },
+          { label: 'Query Latency', value: '8', unit: 'ms' },
+          { label: 'Cache Hit Rate', value: '92', unit: '%' },
+        ],
+      },
     },
   },
 };

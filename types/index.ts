@@ -130,3 +130,40 @@ export interface AIExplanation {
   };
 }
 
+export type ComponentType =
+  | 'erp'
+  | 'worker'
+  | 's3'
+  | 'tinybird'
+  | 'user'
+  | 'clerk'
+  | 'cube'
+  | 'falkordb';
+
+export interface ComponentDemo {
+  id: ComponentType;
+  name: string;
+  description: string;
+  responsibility: string;
+  examples: {
+    data?: {
+      title: string;
+      content: string;
+      language?: string;
+    };
+    process?: {
+      title: string;
+      steps: Array<{ step: string; description: string }>;
+    };
+    metrics?: {
+      title: string;
+      stats: Array<{ label: string; value: string | number; unit?: string }>;
+    };
+    visualization?: {
+      title: string;
+      type: 'code' | 'data' | 'graph' | 'flow';
+      content: any;
+    };
+  };
+}
+

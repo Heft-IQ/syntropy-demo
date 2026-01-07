@@ -12,6 +12,9 @@ import {
   Cloud,
   FileJson,
 } from 'lucide-react';
+import { ComponentType } from '@/types';
+import { COMPONENT_DEMOS } from '@/lib/data';
+import { ComponentDemoPanel } from './ComponentDemoPanel';
 
 type FlowType = 'idle' | 'ingest' | 'query' | 'auth';
 
@@ -21,22 +24,24 @@ interface Node {
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   color: string;
+  id: ComponentType;
 }
 
 export function ArchitectureVis() {
   const [activeFlow, setActiveFlow] = useState<FlowType>('idle');
   const [step, setStep] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
+  const [selectedComponent, setSelectedComponent] = useState<ComponentType | null>(null);
 
   const nodes: Record<string, Node> = {
-    erp: { x: 15, y: 20, label: 'ERP (NetSuite)', icon: Cloud, color: 'text-slate-400' },
-    worker: { x: 35, y: 20, label: 'dlt Worker', icon: Settings, color: 'text-blue-400' },
-    s3: { x: 55, y: 20, label: 'S3 Bronze', icon: HardDrive, color: 'text-amber-500' },
-    tinybird: { x: 80, y: 50, label: 'Tinybird (Silver/Gold)', icon: Database, color: 'text-yellow-500' },
-    user: { x: 15, y: 80, label: 'User / Dashboard', icon: User, color: 'text-white' },
-    clerk: { x: 35, y: 80, label: 'Clerk Auth', icon: Key, color: 'text-blue-300' },
-    cube: { x: 55, y: 80, label: 'Cube Gateway', icon: Box, color: 'text-indigo-400' },
-    falkordb: { x: 80, y: 80, label: 'FalkorDB Graph', icon: Activity, color: 'text-green-400' },
+    erp: { x: 15, y: 20, label: 'ERP (NetSuite)', icon: Cloud, color: 'text-slate-400', id: 'erp' },
+    worker: { x: 35, y: 20, label: 'dlt Worker', icon: Settings, color: 'text-blue-400', id: 'worker' },
+    s3: { x: 55, y: 20, label: 'S3 Bronze', icon: HardDrive, color: 'text-amber-500', id: 's3' },
+    tinybird: { x: 80, y: 50, label: 'Tinybird (Silver/Gold)', icon: Database, color: 'text-yellow-500', id: 'tinybird' },
+    user: { x: 15, y: 80, label: 'User / Dashboard', icon: User, color: 'text-white', id: 'user' },
+    clerk: { x: 35, y: 80, label: 'Clerk Auth', icon: Key, color: 'text-blue-300', id: 'clerk' },
+    cube: { x: 55, y: 80, label: 'Cube Gateway', icon: Box, color: 'text-indigo-400', id: 'cube' },
+    falkordb: { x: 80, y: 80, label: 'FalkorDB Graph', icon: Activity, color: 'text-green-400', id: 'falkordb' },
   };
 
   const startFlow = (flow: FlowType) => {
@@ -167,6 +172,8 @@ export function ArchitectureVis() {
             isActive = true;
           if (activeFlow === 'auth' && ['user', 'clerk', 'cube'].includes(key)) isActive = true;
 
+          const isSelected = selectedComponent === node.id;
+
           return (
             <div
               key={key}
@@ -177,20 +184,38 @@ export function ArchitectureVis() {
                 opacity: activeFlow !== 'idle' && !isActive ? 0.3 : 1,
               }}
             >
-              <div
-                className={`w-16 h-16 rounded-xl bg-slate-900 border flex items-center justify-center shadow-lg transition-all ${
-                  isActive ? 'scale-110 border-white shadow-blue-500/50' : 'border-slate-700'
-                }`}
+              <button
+                onClick={() => setSelectedComponent(node.id)}
+                className="group flex flex-col items-center cursor-pointer"
               >
-                <Icon size={32} className={node.color} />
-              </div>
-              <span
-                className={`mt-3 text-xs font-bold uppercase tracking-wider bg-slate-900/90 px-2 py-1 rounded ${
-                  isActive ? 'text-white' : 'text-slate-500'
-                }`}
-              >
-                {node.label}
-              </span>
+                <div
+                  className={`w-16 h-16 rounded-xl bg-slate-900 border flex items-center justify-center shadow-lg transition-all ${
+                    isActive
+                      ? 'scale-110 border-white shadow-blue-500/50'
+                      : isSelected
+                        ? 'border-indigo-500 shadow-indigo-500/50 scale-105'
+                        : 'border-slate-700 group-hover:border-indigo-500/50 group-hover:shadow-indigo-500/30 group-hover:scale-105'
+                  }`}
+                >
+                  <Icon size={32} className={node.color} />
+                </div>
+                <span
+                  className={`mt-3 text-xs font-bold uppercase tracking-wider bg-slate-900/90 px-2 py-1 rounded transition-colors ${
+                    isActive
+                      ? 'text-white'
+                      : isSelected
+                        ? 'text-indigo-400'
+                        : 'text-slate-500 group-hover:text-slate-300'
+                  }`}
+                >
+                  {node.label}
+                </span>
+                {!isActive && (
+                  <span className="mt-1 text-[10px] text-slate-600 group-hover:text-slate-400 transition-colors">
+                    Click to explore
+                  </span>
+                )}
+              </button>
             </div>
           );
         })}
@@ -218,6 +243,11 @@ export function ArchitectureVis() {
           ))
         )}
       </div>
+
+      <ComponentDemoPanel
+        demo={selectedComponent ? COMPONENT_DEMOS[selectedComponent] : null}
+        onClose={() => setSelectedComponent(null)}
+      />
     </div>
   );
 }
