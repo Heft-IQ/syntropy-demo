@@ -249,7 +249,9 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {log.complianceHash && (
-                        <Lock size={14} className="text-slate-500" title="Immutable - Tamper-proof" />
+                        <div title="Immutable - Tamper-proof">
+                          <Lock size={14} className="text-slate-500" />
+                        </div>
                       )}
                       <button
                         onClick={() => setSelectedLog(log)}

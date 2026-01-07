@@ -80,7 +80,7 @@ export function EnterpriseDashboard() {
       sessionId: `sess_${Date.now()}`,
       requestId: `req_${Date.now()}`,
       correlationId: `corr_${Date.now()}`,
-      before: null,
+      before: undefined,
       after: {
         name: newDraft.name,
         definition: newDraft.logic,
