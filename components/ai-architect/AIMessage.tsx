@@ -2,7 +2,8 @@
 
 import { AIMessage as AIMessageType } from '@/types/ai-architect';
 import { AICodeBlock } from './AICodeBlock';
-import { ExternalLink } from 'lucide-react';
+import { C1Renderer } from './C1Renderer';
+import { ExternalLink, Sparkles } from 'lucide-react';
 
 interface AIMessageProps {
   message: AIMessageType;
@@ -33,6 +34,17 @@ export function AIMessage({ message }: AIMessageProps) {
       >
         <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
 
+        {/* C1 Generative UI Components */}
+        {message.c1Components && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-2 text-xs text-indigo-400">
+              <Sparkles size={12} />
+              <span className="font-medium">Interactive Component</span>
+            </div>
+            <C1Renderer components={message.c1Components} />
+          </div>
+        )}
+
         {message.codeBlocks && message.codeBlocks.length > 0 && (
           <div className="mt-3 space-y-2">
             {message.codeBlocks.map((block, idx) => (
@@ -58,8 +70,29 @@ export function AIMessage({ message }: AIMessageProps) {
           </div>
         )}
 
-        <div className="mt-2 text-[10px] text-slate-500 opacity-70">
-          {message.timestamp.toLocaleTimeString()}
+        <div className="mt-2 flex items-center justify-between">
+          <div className="text-[10px] text-slate-500 opacity-70">
+            {message.timestamp.toLocaleTimeString()}
+          </div>
+          {message.source && (
+            <div className="text-[10px] text-slate-600">
+              {message.source === 'c1' && (
+                <span className="px-1.5 py-0.5 bg-indigo-600/20 text-indigo-400 rounded">
+                  C1
+                </span>
+              )}
+              {message.source === 'openai' && (
+                <span className="px-1.5 py-0.5 bg-green-600/20 text-green-400 rounded">
+                  AI
+                </span>
+              )}
+              {message.source === 'pattern' && (
+                <span className="px-1.5 py-0.5 bg-slate-700 text-slate-400 rounded">
+                  Demo
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,21 +1,25 @@
 import { AIMessage, ChatContext, CodeBlock } from '@/types/ai-architect';
 import { ARCHITECTURE_KNOWLEDGE } from './knowledge';
 import { COMPONENT_DEMOS } from '@/lib/data';
+import { shouldUseC1 } from './c1-client';
 
-// Main response generator - tries OpenAI first, falls back to pattern matching
+// Main response generator - tries C1/OpenAI first, falls back to pattern matching
 export async function generateResponse(query: string, context?: ChatContext): Promise<AIMessage> {
-  // Check if OpenAI is available (client-side check)
-  const isAvailable = typeof window !== 'undefined' 
-    ? await checkOpenAIAvailability()
-    : false;
+  // Check if any AI API is available (client-side check)
+  const apiStatus = typeof window !== 'undefined' 
+    ? await checkAPIAvailability()
+    : { openai: false, c1: false };
 
-  if (isAvailable) {
+  // Determine if we should use C1 for visual generation
+  const useC1 = shouldUseC1(query);
+
+  if (apiStatus.openai || apiStatus.c1) {
     try {
-      // Call API route which handles OpenAI
+      // Call API route which handles C1/OpenAI routing
       const response = await fetch('/api/ai-architect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, context }),
+        body: JSON.stringify({ query, context, useC1 }),
       });
 
       if (response.ok) {
@@ -28,26 +32,35 @@ export async function generateResponse(query: string, context?: ChatContext): Pr
             timestamp: new Date(),
             codeBlocks: data.codeBlocks,
             highlights: data.highlights,
+            c1Components: data.components,
+            source: data.source || 'openai',
           };
         }
       }
     } catch (error) {
-      console.warn('OpenAI API failed, using fallback:', error);
+      console.warn('AI API failed, using fallback:', error);
     }
   }
 
   // Fallback to pattern matching
-  return generatePatternMatchResponse(query, context);
+  const patternResponse = generatePatternMatchResponse(query, context);
+  return {
+    ...patternResponse,
+    source: 'pattern',
+  };
 }
 
-// Check if OpenAI is available via API route
-async function checkOpenAIAvailability(): Promise<boolean> {
+// Check if AI APIs are available via API route
+async function checkAPIAvailability(): Promise<{ openai: boolean; c1: boolean }> {
   try {
     const response = await fetch('/api/ai-architect');
     const data = await response.json();
-    return data.available === true;
+    return {
+      openai: data.openai?.available === true,
+      c1: data.c1?.available === true,
+    };
   } catch {
-    return false;
+    return { openai: false, c1: false };
   }
 }
 

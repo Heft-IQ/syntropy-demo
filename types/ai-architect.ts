@@ -6,6 +6,8 @@ export interface AIMessage {
   codeBlocks?: CodeBlock[];
   links?: Array<{ label: string; href: string }>;
   highlights?: string[]; // Component IDs to highlight
+  c1Components?: any; // C1 Generative UI components
+  source?: 'openai' | 'c1' | 'pattern'; // Response source
 }
 
 export interface CodeBlock {

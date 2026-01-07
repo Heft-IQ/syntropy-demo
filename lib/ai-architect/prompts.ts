@@ -50,7 +50,18 @@ When including code, use this format:
 
 When mentioning components in your response, include their IDs in parentheses like this: "Cube Gateway (cube)" or "FalkorDB Graph (falkordb)" so the UI can highlight them.
 
-Keep responses focused and actionable.`;
+Keep responses focused and actionable.
+
+## Generative UI with C1
+
+When the user asks for visualizations, comparisons, diagrams, or interactive components, use C1 to generate:
+- **Architecture diagrams**: Show component relationships and connections visually
+- **Flow charts**: Visualize data flows with arrows and labels
+- **Comparison tables**: Side-by-side component comparisons with sortable columns
+- **Query builders**: Interactive forms for building metric queries
+- **Detail cards**: Rich component information with sections and metrics
+
+Generate C1 components when the query includes words like: "show me", "visualize", "diagram", "chart", "compare", "table", "flow", "architecture", "build a query".`;
 }
 
 export function buildUserPrompt(query: string, context?: ChatContext): string {

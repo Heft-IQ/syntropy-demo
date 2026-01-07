@@ -18,13 +18,14 @@ export function AIChatPanel({ isOpen, onClose, context, onHighlight }: AIChatPan
     {
       id: '1',
       role: 'system',
-      content: 'Hi! I\'m your AI Architect assistant. Ask me anything about the system architecture, data flows, or components.',
+      content: 'Hi! I\'m your AI Architect assistant. Ask me anything about the system architecture, data flows, or components. Try asking me to "show me a diagram" or "visualize the data flow" for interactive components!',
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAIPowered, setIsAIPowered] = useState<boolean | null>(null);
+  const [c1Available, setC1Available] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,8 +34,14 @@ export function AIChatPanel({ isOpen, onClose, context, onHighlight }: AIChatPan
     if (isOpen) {
       fetch('/api/ai-architect')
         .then((res) => res.json())
-        .then((data) => setIsAIPowered(data.available === true))
-        .catch(() => setIsAIPowered(false));
+        .then((data) => {
+          setIsAIPowered(data.openai?.available === true || data.c1?.available === true);
+          setC1Available(data.c1?.available === true);
+        })
+        .catch(() => {
+          setIsAIPowered(false);
+          setC1Available(false);
+        });
     }
   }, [isOpen]);
 
@@ -109,13 +116,20 @@ export function AIChatPanel({ isOpen, onClose, context, onHighlight }: AIChatPan
               <div className="flex items-center gap-2">
                 <div className="text-sm font-bold text-white">AI Architect</div>
                 {isAIPowered !== null && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    isAIPowered 
-                      ? 'bg-green-600/20 text-green-400 border border-green-600/50' 
-                      : 'bg-slate-700 text-slate-400 border border-slate-600'
-                  }`}>
-                    {isAIPowered ? 'AI Powered' : 'Demo Mode'}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      isAIPowered 
+                        ? 'bg-green-600/20 text-green-400 border border-green-600/50' 
+                        : 'bg-slate-700 text-slate-400 border border-slate-600'
+                    }`}>
+                      {isAIPowered ? 'AI Powered' : 'Demo Mode'}
+                    </span>
+                    {c1Available && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-600/20 text-indigo-400 border border-indigo-600/50">
+                        C1
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
               <div className="text-[10px] text-slate-400">Ask me anything</div>
@@ -166,7 +180,7 @@ export function AIChatPanel({ isOpen, onClose, context, onHighlight }: AIChatPan
             </button>
           </div>
           <div className="mt-2 text-[10px] text-slate-500">
-            Try: "How does data flow from ERP to Tinybird?" or "What is FalkorDB?"
+            Try: "How does data flow from ERP to Tinybird?" or "Show me a diagram of the architecture"
           </div>
         </div>
       </div>
