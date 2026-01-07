@@ -3,6 +3,7 @@
 import { AIMessage as AIMessageType } from '@/types/ai-architect';
 import { AICodeBlock } from './AICodeBlock';
 import { C1Renderer } from './C1Renderer';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { ExternalLink, Sparkles } from 'lucide-react';
 
 interface AIMessageProps {
@@ -32,7 +33,13 @@ export function AIMessage({ message }: AIMessageProps) {
             : 'bg-slate-800 text-slate-100 border border-slate-700'
         }`}
       >
-        <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+        {isUser ? (
+          <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+        ) : (
+          <div className="text-sm">
+            <MarkdownRenderer content={message.content} />
+          </div>
+        )}
 
         {/* C1 Generative UI Components */}
         {message.c1Components && (

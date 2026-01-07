@@ -3,6 +3,8 @@
 import { CodeBlock } from '@/types/ai-architect';
 import { Copy, Check } from 'lucide-react';
 import { useState } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface AICodeBlockProps {
   block: CodeBlock;
@@ -25,12 +27,24 @@ export function AICodeBlock({ block }: AICodeBlockProps) {
         </div>
       )}
       <div className="relative">
-        <pre className="p-4 overflow-x-auto text-xs font-mono text-slate-300">
-          <code>{block.code}</code>
-        </pre>
+        <SyntaxHighlighter
+          language={block.language || 'text'}
+          style={vscDarkPlus}
+          customStyle={{
+            margin: 0,
+            padding: '1rem',
+            fontSize: '0.75rem',
+            lineHeight: '1.5',
+            background: '#0a0a0a',
+            border: 'none',
+          }}
+          showLineNumbers={false}
+        >
+          {block.code}
+        </SyntaxHighlighter>
         <button
           onClick={handleCopy}
-          className="absolute top-2 right-2 p-2 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 transition-colors"
+          className="absolute top-3 right-3 p-2 bg-slate-800/90 hover:bg-slate-700 rounded border border-slate-700 transition-colors backdrop-blur-sm"
           title="Copy code"
         >
           {copied ? (
