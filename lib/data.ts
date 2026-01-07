@@ -505,31 +505,33 @@ After (Normalized):
   s3: {
     id: 's3',
     name: 'S3 Bronze',
-    description: 'Raw data lake storage in Parquet format',
-    responsibility: 'Immutable storage layer for raw ingested data',
+    description: 'Raw data lake storage organized by vendor connectors',
+    responsibility: 'Immutable storage layer for raw ingested data with multi-vendor organization',
     examples: {
       data: {
-        title: 'Data Lake Structure',
+        title: 'Directory Structure (Multi-Vendor)',
         language: 'text',
-        content: `s3://syntropy-bronze/
-  ├── transactions/
-  │   ├── year=2024/
-  │   │   ├── month=01/
-  │   │   │   ├── day=15/
-  │   │   │   │   ├── part-00000.parquet (2.1GB)
-  │   │   │   │   └── part-00001.parquet (1.8GB)
-  │   │   │   └── day=16/
-  │   │   └── month=02/
-  └── customers/
-      └── year=2024/`,
+        content: `/ingestion
+  /connectors
+    /netsuite_erp         # Finance Data
+      __init__.py
+      resource.py
+    /salesforce_crm       # Sales Data
+      __init__.py
+      resource.py
+  /pipelines
+    run_finance_sync.py   # Entrypoint for NetSuite
+    run_sales_sync.py     # Entrypoint for Salesforce
+  /tests
+    test_netsuite.py`,
       },
       process: {
-        title: 'Storage Process',
+        title: 'Ingestion Pipeline Structure',
         steps: [
-          { step: '1. Partition', description: 'Organize by date partitions (year/month/day)' },
-          { step: '2. Compress', description: 'Convert to Parquet format with Snappy compression' },
-          { step: '3. Store', description: 'Write to S3 with versioning enabled' },
-          { step: '4. Index', description: 'Create metadata index for fast queries' },
+          { step: '1. Connectors', description: 'Vendor-specific connectors (NetSuite ERP, Salesforce CRM)' },
+          { step: '2. Pipelines', description: 'Entrypoint scripts for each vendor sync process' },
+          { step: '3. Resources', description: 'Resource definitions for data extraction' },
+          { step: '4. Tests', description: 'Unit tests for connector validation' },
         ],
       },
       metrics: {
