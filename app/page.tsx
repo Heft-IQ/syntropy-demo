@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Network, Zap, LayoutGrid, Layers } from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
 import { ArchitectureVis } from '@/components/architecture/ArchitectureVis';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { EnterpriseDashboard } from '@/components/dashboard/EnterpriseDashboard';
@@ -10,10 +11,13 @@ import { ChatContext } from '@/types/ai-architect';
 import { HelpButton } from '@/components/user-guide/HelpButton';
 import { UserGuideModal } from '@/components/user-guide/UserGuideModal';
 import { OnboardingTour } from '@/components/education/OnboardingTour';
+import { UserButton } from '@/components/auth/UserButton';
+import { SignInButton } from '@/components/auth/SignInButton';
 
 type View = 'arch' | 'onboarding' | 'dashboard';
 
 export default function Home() {
+  const { isSignedIn, isLoaded, user } = useUser();
   const [view, setView] = useState<View>('dashboard');
   const [highlightedComponents, setHighlightedComponents] = useState<string[]>([]);
   const [showGuide, setShowGuide] = useState(false);
@@ -21,12 +25,14 @@ export default function Home() {
 
   // Check if user has seen tour
   useEffect(() => {
-    const hasSeenTour = localStorage.getItem('syntropy-tour-seen') === 'true';
-    if (!hasSeenTour) {
-      // Show tour after a short delay
-      setTimeout(() => setShowTour(true), 1000);
+    if (isLoaded && isSignedIn) {
+      const hasSeenTour = localStorage.getItem('syntropy-tour-seen') === 'true';
+      if (!hasSeenTour) {
+        // Show tour after a short delay
+        setTimeout(() => setShowTour(true), 1000);
+      }
     }
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   return (
     <div className="flex flex-col h-screen bg-black text-slate-100 font-sans overflow-hidden">
@@ -75,6 +81,15 @@ export default function Home() {
           <div data-tour="help-button">
             <HelpButton onClick={() => setShowGuide(true)} />
           </div>
+          {isLoaded && (
+            <>
+              {isSignedIn ? (
+                <UserButton />
+              ) : (
+                <SignInButton />
+              )}
+            </>
+          )}
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>System Online
           </div>
@@ -103,7 +118,7 @@ export default function Home() {
         <AIChatButton
           context={{
             currentView: view,
-            userRole: 'Engineer',
+            userRole: user?.publicMetadata?.role as string || 'Engineer',
           }}
           onHighlight={setHighlightedComponents}
         />
