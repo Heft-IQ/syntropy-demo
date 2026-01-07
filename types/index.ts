@@ -220,6 +220,11 @@ export interface ComponentDemo {
       type: 'code' | 'data' | 'graph' | 'flow';
       content: any;
     };
+    realWorldScenario?: {
+      title: string;
+      content: string;
+      language?: string;
+    };
   };
 }
 

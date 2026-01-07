@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Network, Zap, LayoutGrid, Layers } from 'lucide-react';
 import { ArchitectureVis } from '@/components/architecture/ArchitectureVis';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
@@ -9,6 +9,7 @@ import { AIChatButton } from '@/components/ai-architect/AIChatButton';
 import { ChatContext } from '@/types/ai-architect';
 import { HelpButton } from '@/components/user-guide/HelpButton';
 import { UserGuideModal } from '@/components/user-guide/UserGuideModal';
+import { OnboardingTour } from '@/components/education/OnboardingTour';
 
 type View = 'arch' | 'onboarding' | 'dashboard';
 
@@ -16,6 +17,16 @@ export default function Home() {
   const [view, setView] = useState<View>('dashboard');
   const [highlightedComponents, setHighlightedComponents] = useState<string[]>([]);
   const [showGuide, setShowGuide] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+
+  // Check if user has seen tour
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem('syntropy-tour-seen') === 'true';
+    if (!hasSeenTour) {
+      // Show tour after a short delay
+      setTimeout(() => setShowTour(true), 1000);
+    }
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-black text-slate-100 font-sans overflow-hidden">
@@ -28,7 +39,7 @@ export default function Home() {
             Syntropy<span className="text-slate-500">Demo</span>
           </span>
         </div>
-        <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-800">
+        <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-800" data-tour="navigation-tabs">
           <button
             onClick={() => setView('arch')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
@@ -61,7 +72,9 @@ export default function Home() {
           </button>
         </div>
         <div className="flex items-center gap-3">
-          <HelpButton onClick={() => setShowGuide(true)} />
+          <div data-tour="help-button">
+            <HelpButton onClick={() => setShowGuide(true)} />
+          </div>
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>System Online
           </div>
@@ -86,14 +99,27 @@ export default function Home() {
         )}
       </div>
 
-      <AIChatButton
-        context={{
-          currentView: view,
-          userRole: 'Engineer',
-        }}
-        onHighlight={setHighlightedComponents}
-      />
+      <div data-tour="ai-chat-button">
+        <AIChatButton
+          context={{
+            currentView: view,
+            userRole: 'Engineer',
+          }}
+          onHighlight={setHighlightedComponents}
+        />
+      </div>
       <UserGuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
+      <OnboardingTour
+        isOpen={showTour}
+        onClose={() => {
+          setShowTour(false);
+          localStorage.setItem('syntropy-tour-seen', 'true');
+        }}
+        onComplete={() => {
+          setShowTour(false);
+          localStorage.setItem('syntropy-tour-seen', 'true');
+        }}
+      />
     </div>
   );
 }

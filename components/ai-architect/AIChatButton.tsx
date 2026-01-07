@@ -19,6 +19,7 @@ export function AIChatButton({ context, onHighlight }: AIChatButtonProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 rounded-full shadow-lg shadow-indigo-500/30 flex items-center justify-center transition-all hover:scale-110 z-40"
         aria-label="Open AI Architect"
+        data-tour="ai-chat-button"
       >
         {isOpen ? (
           <X size={24} className="text-white" />

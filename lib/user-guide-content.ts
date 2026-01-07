@@ -247,6 +247,76 @@ export const USER_GUIDE_SECTIONS: GuideSection[] = [
     },
   },
   {
+    id: 'etl-vs-elt',
+    title: 'Understanding ELT vs ETL',
+    icon: '🔄',
+    content: {
+      overview: 'Learn about the paradigm shift from ETL (Extract-Transform-Load) to ELT (Extract-Load-Transform) and why modern data platforms use ELT.',
+      features: [
+        {
+          name: 'ETL (Traditional)',
+          description: 'Extract-Transform-Load: Data is transformed BEFORE being loaded into storage. Schema-on-write approach with transformation blocking ingestion.',
+        },
+        {
+          name: 'ELT (Modern)',
+          description: 'Extract-Load-Transform: Data is loaded FIRST, then transformed on-demand. Schema-on-read approach with faster ingestion and more flexibility.',
+        },
+        {
+          name: 'Why We Use ELT',
+          description: 'ELT provides faster ingestion, schema flexibility, cost efficiency, and aligns with modern data lake architectures (Bronze/Silver/Gold layers).',
+        },
+        {
+          name: 'ELT in Our Demo',
+          description: 'See ELT in action: ERP → dlt Worker (minimal normalization) → S3 Bronze (raw storage) → Tinybird (transform on-demand).',
+        },
+      ],
+      steps: [
+        {
+          title: 'Understand the Difference',
+          description: 'ETL transforms before storage (slower, less flexible). ELT loads first, transforms later (faster, more flexible).',
+          tip: 'Think of ETL as "cooking before storing" and ELT as "storing raw ingredients, cooking when needed".',
+        },
+        {
+          title: 'See ELT in Action',
+          description: 'Click "Simulate Ingestion (ELT)" in the Architecture view to see how data flows: Extract → Load → Transform.',
+          tip: 'Notice how data is loaded into S3 Bronze first, then transformed in Tinybird - this is the ELT approach!',
+        },
+        {
+          title: 'Explore dlt Worker',
+          description: 'Click the dlt Worker component to see detailed information about how it implements the ELT approach.',
+          tip: 'The dlt Worker demo includes a "Why ELT?" section explaining the benefits.',
+        },
+        {
+          title: 'Learn More',
+          description: 'Use the ETL vs ELT explainer component (available in component demos) for a detailed side-by-side comparison.',
+          tip: 'The explainer shows visual flows, key differences, and real examples from our architecture.',
+        },
+      ],
+      examples: [
+        {
+          title: 'ELT Flow Example',
+          content: `1. Extract: ERP sends raw JSON via REST API
+2. Load: dlt Worker converts to Parquet, stores in S3 Bronze
+3. Transform: Tinybird transforms data on-demand for queries
+
+Key Point: Transformation happens AFTER storage, not during ingestion!`,
+        },
+        {
+          title: 'ETL vs ELT Comparison',
+          content: `ETL: ERP → Transform → Load → Query
+  - Slower ingestion (transformation blocks)
+  - Schema-on-write (define before storing)
+  - Less flexible for schema changes
+
+ELT: ERP → Load → Transform → Query
+  - Faster ingestion (no transformation blocking)
+  - Schema-on-read (define when querying)
+  - More flexible for schema changes`,
+        },
+      ],
+    },
+  },
+  {
     id: 'keyboard-shortcuts',
     title: 'Keyboard Shortcuts',
     icon: '⌨️',

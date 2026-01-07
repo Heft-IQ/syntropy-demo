@@ -33,8 +33,8 @@ export const ARCHITECTURE_KNOWLEDGE: ArchitectureKnowledge = {
   commonQuestions: [
     {
       question: 'How does data flow from ERP to Tinybird?',
-      answer: 'Data flows through the ingestion pipeline: ERP (NetSuite) → dlt Worker → S3 Bronze → Tinybird. The ERP system provides raw JSON data via REST API, which is normalized by the dlt Worker into Parquet format, stored in S3 Bronze, and then ingested into Tinybird for querying.',
-      keywords: ['erp', 'tinybird', 'data flow', 'ingestion', 'pipeline'],
+      answer: 'Data flows through the ELT ingestion pipeline: 1) ERP (NetSuite) sends raw JSON via REST API (Extract), 2) dlt Worker does minimal normalization and converts to Parquet format (Load), 3) Data is stored in S3 Bronze as raw/normalized Parquet files (Load), 4) Tinybird auto-ingests from S3 and applies transformations on-demand (Transform). This ELT approach means transformation happens after storage, not during ingestion, providing faster ingestion and more flexibility.',
+      keywords: ['erp', 'tinybird', 'data flow', 'ingestion', 'pipeline', 'elt'],
       relatedComponents: ['erp', 'worker', 's3', 'tinybird'],
     },
     {
@@ -57,9 +57,21 @@ export const ARCHITECTURE_KNOWLEDGE: ArchitectureKnowledge = {
     },
     {
       question: 'What does the dlt Worker do?',
-      answer: 'The dlt Worker is an ETL pipeline that normalizes and transforms data. It receives raw JSON from ERP systems, detects schemas, maps fields to canonical names, validates data types, and standardizes formats (dates, currencies, etc.). It outputs normalized Parquet files to S3 Bronze.',
-      keywords: ['dlt', 'worker', 'etl', 'normalization', 'transformation'],
+      answer: 'The dlt Worker implements an ELT (Extract-Load-Transform) pipeline. It receives raw JSON from ERP systems, does minimal normalization (format conversion to Parquet), and loads data into S3 Bronze. The key difference from ETL is that full transformation happens later in Tinybird, not during ingestion. This ELT approach provides faster ingestion, schema flexibility, and cost efficiency.',
+      keywords: ['dlt', 'worker', 'elt', 'etl', 'normalization', 'transformation', 'pipeline'],
       relatedComponents: ['worker', 'erp', 's3'],
+    },
+    {
+      question: 'What is the difference between ETL and ELT?',
+      answer: 'ETL (Extract-Transform-Load) transforms data BEFORE storage - slower ingestion, schema-on-write, less flexible. ELT (Extract-Load-Transform) loads data FIRST, then transforms on-demand - faster ingestion, schema-on-read, more flexible. Our platform uses ELT: ERP → dlt Worker (minimal normalization) → S3 Bronze (raw storage) → Tinybird (transform on-demand). This allows faster ingestion, handles schema changes gracefully, and preserves raw data for future use cases.',
+      keywords: ['etl', 'elt', 'difference', 'pipeline', 'transformation', 'schema'],
+      relatedComponents: ['worker', 's3', 'tinybird'],
+    },
+    {
+      question: 'Why do we use ELT instead of ETL?',
+      answer: 'We use ELT for several key benefits: 1) Faster ingestion - no transformation blocking the pipeline, 2) Schema flexibility - handle ERP schema changes without breaking ingestion, 3) Cost efficiency - transform only what you query, not everything upfront, 4) Data preservation - raw data always available for new use cases, 5) Modern architecture - aligns with data lake patterns (Bronze/Silver/Gold layers). In our demo, you can see ELT in action: data flows quickly from ERP → S3 Bronze, then transforms in Tinybird on-demand.',
+      keywords: ['elt', 'etl', 'why', 'benefits', 'advantages', 'modern'],
+      relatedComponents: ['worker', 's3', 'tinybird'],
     },
     {
       question: 'How does authentication work?',

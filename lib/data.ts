@@ -798,18 +798,18 @@ export const COMPONENT_DEMOS: Record<string, ComponentDemo> = {
   worker: {
     id: 'worker',
     name: 'dlt Worker',
-    description: 'Data load tool worker that normalizes and transforms data',
-    responsibility: 'ETL pipeline that standardizes data formats and schemas',
+    description: 'Data load tool worker that normalizes and loads data (ELT approach)',
+    responsibility: 'ELT pipeline that loads raw data first, then normalizes format (not full transformation)',
     category: 'etl',
     dependencies: {
       dependsOn: ['erp'],
       dependedBy: ['s3'],
     },
     architectureContext: {
-      position: 'ETL layer in the ingestion pipeline',
+      position: 'ELT layer in the ingestion pipeline - loads before transforming',
       interactions: ['erp', 's3'],
       dataFlowIn: ['Raw JSON from ERP'],
-      dataFlowOut: ['Normalized Parquet to S3'],
+      dataFlowOut: ['Normalized Parquet to S3 Bronze (raw storage)'],
     },
     examples: {
       data: {
@@ -832,13 +832,44 @@ After (Normalized):
 }`,
       },
       process: {
-        title: 'Normalization Pipeline',
+        title: 'ELT Pipeline (Extract, Load, Transform)',
         steps: [
-          { step: '1. Schema Detection', description: 'Auto-detect field types and constraints' },
-          { step: '2. Field Mapping', description: 'Map to canonical field names' },
-          { step: '3. Data Validation', description: 'Validate data types and ranges' },
-          { step: '4. Format Standardization', description: 'Standardize dates, currencies, etc.' },
+          { step: '1. Extract', description: 'Pull raw JSON data from ERP via REST API' },
+          { step: '2. Load (Minimal Normalization)', description: 'Convert JSON to Parquet format, preserve raw structure' },
+          { step: '3. Store Raw', description: 'Load normalized Parquet into S3 Bronze (data lake) - raw data preserved' },
+          { step: '4. Transform Later', description: 'Transformation happens in Tinybird (Silver/Gold layer) on-demand' },
         ],
+      },
+      realWorldScenario: {
+        title: 'Why ELT? Key Benefits',
+        content: `**ELT vs ETL Paradigm Shift**
+
+**Traditional ETL (Extract-Transform-Load):**
+- Transform data BEFORE storing
+- Schema-on-write (define structure before storage)
+- Slower ingestion (transformation is blocking)
+- Less flexible for schema changes
+
+**Modern ELT (Extract-Load-Transform):**
+- Load raw data FIRST, transform later
+- Schema-on-read (define structure when querying)
+- Faster ingestion (no transformation bottleneck)
+- More flexible for schema changes
+
+**Why dlt Uses ELT:**
+1. **Faster Ingestion**: No transformation blocking the pipeline
+2. **Schema Flexibility**: Handle ERP schema changes without breaking ingestion
+3. **Cost Efficiency**: Transform only what you query, not everything upfront
+4. **Data Preservation**: Raw data always available for new use cases
+5. **Modern Architecture**: Aligns with data lake patterns (Bronze/Silver/Gold)
+
+**In Our Demo:**
+- ERP → dlt Worker: Extract & minimal normalization (format conversion only)
+- dlt Worker → S3 Bronze: Load raw/normalized data (preserved)
+- S3 Bronze → Tinybird: Transform on-demand for analytics
+
+This ELT approach allows us to ingest data quickly and transform flexibly.`,
+        language: 'markdown',
       },
       metrics: {
         title: 'Processing Metrics',

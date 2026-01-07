@@ -1,8 +1,10 @@
 'use client';
 
-import { X, Code, Activity, BarChart2, GitBranch, Network, Link2 } from 'lucide-react';
+import { useState } from 'react';
+import { X, Code, Activity, BarChart2, GitBranch, Network, Link2, BookOpen } from 'lucide-react';
 import { ComponentDemo, ComponentType } from '@/types';
 import { COMPONENT_DEMOS } from '@/lib/data';
+import { ETLvsELTExplainer } from '@/components/education/ETLvsELTExplainer';
 
 interface ComponentDemoPanelProps {
   demo: ComponentDemo | null;
@@ -10,7 +12,11 @@ interface ComponentDemoPanelProps {
 }
 
 export function ComponentDemoPanel({ demo, onClose }: ComponentDemoPanelProps) {
+  const [showETLExplainer, setShowETLExplainer] = useState(false);
+
   if (!demo) return null;
+
+  const isWorkerComponent = demo.id === 'worker';
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6 z-50 animate-fade-in">
@@ -198,9 +204,43 @@ export function ComponentDemoPanel({ demo, onClose }: ComponentDemoPanelProps) {
                 </div>
               </div>
             )}
+
+            {demo.examples.realWorldScenario && (
+              <div className="bg-slate-950 border border-indigo-500/50 rounded-xl p-5 lg:col-span-2">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <BookOpen size={18} className="text-indigo-400" />
+                    <h3 className="text-sm font-bold text-white">{demo.examples.realWorldScenario.title}</h3>
+                  </div>
+                  {isWorkerComponent && (
+                    <button
+                      onClick={() => setShowETLExplainer(true)}
+                      className="text-xs px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/50 rounded-lg transition-colors"
+                    >
+                      Learn about ETL vs ELT
+                    </button>
+                  )}
+                </div>
+                <div className="prose prose-invert max-w-none">
+                  <pre className="text-xs font-mono text-slate-300 bg-black rounded-lg p-4 overflow-x-auto whitespace-pre-wrap">
+                    {demo.examples.realWorldScenario.content}
+                  </pre>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {showETLExplainer && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-6">
+          <div className="bg-slate-900 w-full max-w-5xl max-h-[90vh] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
+            <div className="p-6 overflow-y-auto max-h-[90vh]">
+              <ETLvsELTExplainer onClose={() => setShowETLExplainer(false)} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

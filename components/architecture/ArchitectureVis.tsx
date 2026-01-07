@@ -11,6 +11,10 @@ import {
   Activity,
   Cloud,
   FileJson,
+  Pause,
+  Play,
+  StepForward,
+  BookOpen,
 } from 'lucide-react';
 import { ComponentType, ComponentCategory } from '@/types';
 import { COMPONENT_DEMOS, FLOW_CONNECTIONS } from '@/lib/data';
@@ -78,8 +82,9 @@ interface ArchitectureVisProps {
 export function ArchitectureVis({ highlightedComponents = [] }: ArchitectureVisProps) {
   const [activeFlow, setActiveFlow] = useState<FlowType>('idle');
   const [step, setStep] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<Array<{ message: string; dataFormat?: string; explanation?: string }>>([]);
   const [selectedComponent, setSelectedComponent] = useState<ComponentType | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
 
   const nodes: Record<string, Node> = {
     erp: { x: 15, y: 20, label: 'ERP (NetSuite)', icon: Cloud, color: 'text-slate-400', id: 'erp', category: 'data-source' },
@@ -96,48 +101,148 @@ export function ArchitectureVis({ highlightedComponents = [] }: ArchitectureVisP
     setActiveFlow(flow);
     setStep(0);
     setLogs([]);
+    setIsPaused(false);
+  };
+
+  const handlePause = () => {
+    setIsPaused(!isPaused);
+  };
+
+  const handleStep = () => {
+    if (activeFlow === 'idle' || !isPaused) return;
+    const flowSteps: Record<FlowType, Array<{ message: string; dataFormat?: string; explanation?: string }>> = {
+      idle: [],
+      ingest: [
+        { message: 'Step 1: Extract raw JSON from ERP API', dataFormat: 'Raw JSON', explanation: 'ERP systems send raw data via REST API. No transformation yet!' },
+        { message: 'Step 2: Load & normalize format (dlt Worker)', dataFormat: 'Normalized Parquet', explanation: 'dlt Worker converts JSON to Parquet. Raw data preserved - ELT approach!' },
+        { message: 'Step 3: Store in S3 Bronze (data lake)', dataFormat: 'Parquet files', explanation: 'Raw data stored in S3 Bronze - immutable storage layer.' },
+        { message: 'Step 4: Auto-ingest into Tinybird', dataFormat: 'Queryable analytics', explanation: 'Tinybird ingests from S3. Transformation happens here - schema-on-read.' },
+        { message: 'Step 5: Data ready for analytics', dataFormat: 'Analytics ready', explanation: 'Data is queryable. Transformations happen on-demand.' },
+      ],
+      query: [
+        { message: 'Step 1: User requests metric query', dataFormat: 'Metric request', explanation: 'User requests a business metric through the API.' },
+        { message: 'Step 2: Cube Gateway validates permissions', dataFormat: 'JWT token', explanation: 'Cube Gateway checks JWT token with Clerk Auth.' },
+        { message: 'Step 3: Resolve metric schema from FalkorDB', dataFormat: 'Canonical mappings', explanation: 'FalkorDB resolves metric definition and mappings.' },
+        { message: 'Step 4: Translate to SQL and query Tinybird', dataFormat: 'SQL query', explanation: 'Cube Gateway translates to SQL and queries Tinybird.' },
+        { message: 'Step 5: Return results to user', dataFormat: 'JSON response', explanation: 'Results are formatted and returned.' },
+      ],
+      auth: [
+        { message: 'Step 1: User authenticates', dataFormat: 'Credentials', explanation: 'User provides credentials to Clerk Auth.' },
+        { message: 'Step 2: Clerk issues JWT token', dataFormat: 'JWT token', explanation: 'Clerk validates and issues JWT token.' },
+        { message: 'Step 3: Session validated', dataFormat: 'Session data', explanation: 'JWT token is validated on each request.' },
+        { message: 'Step 4: Graph permissions loaded', dataFormat: 'RBAC policies', explanation: 'Access control policies are applied.' },
+      ],
+    };
+    const currentSteps = flowSteps[activeFlow] || [];
+    if (step < currentSteps.length) {
+      setLogs((prev) => [...prev, currentSteps[step]]);
+      setStep((s) => s + 1);
+    }
   };
 
   useEffect(() => {
     if (activeFlow === 'idle') return;
 
-    const flowSteps: Record<FlowType, string[]> = {
+    const flowSteps: Record<FlowType, Array<{ message: string; dataFormat?: string; explanation?: string }>> = {
       idle: [],
       ingest: [
-        'Extracting from ERP API...',
-        'dlt normalizing JSON...',
-        'Writing Parquet to S3...',
-        'Tinybird Auto-Ingest Triggered.',
-        'Data Available (Silver Layer)',
+        {
+          message: 'Step 1: Extract raw JSON from ERP API',
+          dataFormat: 'Raw JSON',
+          explanation: 'ERP systems (NetSuite, Salesforce, SAP) send raw transactional data via REST API. No transformation yet - this is the ELT approach!',
+        },
+        {
+          message: 'Step 2: Load & normalize format (dlt Worker)',
+          dataFormat: 'Normalized Parquet',
+          explanation: 'dlt Worker converts JSON to Parquet format and does minimal normalization. Raw data structure is preserved - this is the "Load" step in ELT.',
+        },
+        {
+          message: 'Step 3: Store in S3 Bronze (data lake)',
+          dataFormat: 'Parquet files',
+          explanation: 'Raw/normalized data is stored in S3 Bronze. This is immutable storage - the raw data is always preserved for future transformations.',
+        },
+        {
+          message: 'Step 4: Auto-ingest into Tinybird',
+          dataFormat: 'Queryable analytics',
+          explanation: 'Tinybird automatically ingests from S3. This is where transformation happens (Silver/Gold layer) - schema-on-read approach.',
+        },
+        {
+          message: 'Step 5: Data ready for analytics',
+          dataFormat: 'Analytics ready',
+          explanation: 'Data is now queryable. Transformations happen on-demand when queries are executed, not during ingestion.',
+        },
       ],
       query: [
-        'User requests Metric...',
-        'Cube checks Permissions (Clerk)...',
-        'Cube resolves Schema (FalkorDB)...',
-        'Query pushed to Tinybird...',
-        'Response served.',
+        {
+          message: 'Step 1: User requests metric query',
+          dataFormat: 'Metric request',
+          explanation: 'User or dashboard requests a business metric (e.g., "Net Revenue") through the API.',
+        },
+        {
+          message: 'Step 2: Cube Gateway validates permissions',
+          dataFormat: 'JWT token',
+          explanation: 'Cube Gateway checks the JWT token with Clerk Auth to ensure user has permission to access this metric.',
+        },
+        {
+          message: 'Step 3: Resolve metric schema from FalkorDB',
+          dataFormat: 'Canonical mappings',
+          explanation: 'FalkorDB Graph (knowledge graph) resolves the metric definition, mapping canonical fields to physical ERP columns.',
+        },
+        {
+          message: 'Step 4: Translate to SQL and query Tinybird',
+          dataFormat: 'SQL query',
+          explanation: 'Cube Gateway translates the metric definition into SQL and executes it against Tinybird (the analytics store).',
+        },
+        {
+          message: 'Step 5: Return results to user',
+          dataFormat: 'JSON response',
+          explanation: 'Query results are formatted and returned to the user/dashboard. The entire flow is transparent and fast.',
+        },
       ],
       auth: [
-        'User logs in...',
-        'Clerk issues JWT...',
-        'Session validated...',
-        'Graph Permissions loaded.',
+        {
+          message: 'Step 1: User authenticates',
+          dataFormat: 'Credentials',
+          explanation: 'User provides credentials (username/password, SSO, etc.) to Clerk Auth.',
+        },
+        {
+          message: 'Step 2: Clerk issues JWT token',
+          dataFormat: 'JWT token',
+          explanation: 'Clerk validates credentials and issues a JWT token with user roles and permissions embedded.',
+        },
+        {
+          message: 'Step 3: Session validated',
+          dataFormat: 'Session data',
+          explanation: 'JWT token is validated on each request. Session data is cached for performance.',
+        },
+        {
+          message: 'Step 4: Graph permissions loaded',
+          dataFormat: 'RBAC policies',
+          explanation: 'Access control policies from FalkorDB Graph are applied to determine what data the user can access.',
+        },
       ],
     };
 
     const currentSteps = flowSteps[activeFlow] || [];
 
+    if (isPaused) return;
+
     const timer = setTimeout(() => {
       if (step < currentSteps.length) {
-        setLogs((prev) => [...prev, currentSteps[step]]);
+        const currentStep = currentSteps[step];
+        setLogs((prev) => [...prev, currentStep]);
         setStep((s) => s + 1);
       } else {
-        setTimeout(() => setActiveFlow('idle'), 1500);
+        setTimeout(() => {
+          setActiveFlow('idle');
+          setStep(0);
+          setIsPaused(false);
+        }, 1500);
       }
-    }, 1200);
+    }, 2500); // Slower for better readability
 
     return () => clearTimeout(timer);
-  }, [activeFlow, step]);
+  }, [activeFlow, step, isPaused]);
 
   const getActivePath = () => {
     switch (activeFlow) {
@@ -158,13 +263,13 @@ export function ArchitectureVis({ highlightedComponents = [] }: ArchitectureVisP
         <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
           System Architecture
         </h1>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center" data-tour="flow-simulation">
           <button
             onClick={() => startFlow('ingest')}
             disabled={activeFlow !== 'idle'}
             className="px-4 py-2 bg-amber-600/20 text-amber-400 border border-amber-500/50 rounded-lg text-sm font-medium hover:bg-amber-600/40 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
-            <FileJson size={14} /> Simulate Ingestion
+            <FileJson size={14} /> Simulate Ingestion (ELT)
           </button>
           <button
             onClick={() => startFlow('query')}
@@ -180,6 +285,23 @@ export function ArchitectureVis({ highlightedComponents = [] }: ArchitectureVisP
           >
             Simulate Auth
           </button>
+          {activeFlow !== 'idle' && (
+            <>
+              <button
+                onClick={handlePause}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                {isPaused ? <Play size={14} /> : <Pause size={14} />}
+              </button>
+              <button
+                onClick={handleStep}
+                disabled={!isPaused}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <StepForward size={14} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -257,19 +379,20 @@ export function ArchitectureVis({ highlightedComponents = [] }: ArchitectureVisP
           const isHighlighted = highlightedComponents.includes(node.id);
 
           return (
-            <div
-              key={key}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10 transition-all duration-500"
-              style={{
-                left: `${node.x}%`,
-                top: `${node.y}%`,
-                opacity: activeFlow !== 'idle' && !isActive ? 0.3 : 1,
-              }}
-            >
-              <button
-                onClick={() => setSelectedComponent(node.id)}
-                className="group flex flex-col items-center cursor-pointer"
-              >
+                <div
+                  key={key}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10 transition-all duration-500"
+                  style={{
+                    left: `${node.x}%`,
+                    top: `${node.y}%`,
+                    opacity: activeFlow !== 'idle' && !isActive ? 0.3 : 1,
+                  }}
+                  data-tour="architecture-components"
+                >
+                  <button
+                    onClick={() => setSelectedComponent(node.id)}
+                    className="group flex flex-col items-center cursor-pointer"
+                  >
                 <div
                   className={`w-16 h-16 rounded-xl bg-slate-900 border flex items-center justify-center shadow-lg transition-all ${
                     isActive
@@ -321,21 +444,44 @@ export function ArchitectureVis({ highlightedComponents = [] }: ArchitectureVisP
         </div>
       </div>
 
-      <div className="w-full max-w-6xl mt-6 p-4 bg-black rounded-lg border border-slate-800 h-32 overflow-y-auto font-mono text-xs">
-        <div className="text-slate-500 mb-2 border-b border-slate-800 pb-1">System Logs</div>
-        {logs.length === 0 ? (
-          <div className="text-slate-700 italic">System Idle...</div>
-        ) : (
-          logs.map((l, i) => (
-            <div
-              key={i}
-              className={`mb-1 ${activeFlow === 'ingest' ? 'text-amber-400' : 'text-green-400'}`}
-            >
-              [{new Date().toLocaleTimeString()}] {l}
-            </div>
-          ))
-        )}
-      </div>
+          <div className="w-full max-w-6xl mt-6 p-4 bg-black rounded-lg border border-slate-800 min-h-[200px] max-h-[300px] overflow-y-auto font-mono text-xs">
+            <div className="text-slate-500 mb-2 border-b border-slate-800 pb-1">System Logs - Flow Details</div>
+            {logs.length === 0 ? (
+              <div className="text-slate-700 italic">System Idle... Click a simulation button to start</div>
+            ) : (
+              <div className="space-y-3">
+                {logs.map((log, i) => (
+                  <div
+                    key={i}
+                    className={`p-3 rounded-lg border ${
+                      activeFlow === 'ingest'
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                        : activeFlow === 'query'
+                        ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
+                        : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="font-semibold mb-1">{log.message}</div>
+                        {log.dataFormat && (
+                          <div className="text-xs opacity-75 mb-2">
+                            Data Format: <span className="font-mono bg-black/30 px-1.5 py-0.5 rounded">{log.dataFormat}</span>
+                          </div>
+                        )}
+                        {log.explanation && (
+                          <div className="text-xs opacity-90 mt-2 leading-relaxed">{log.explanation}</div>
+                        )}
+                      </div>
+                      <div className="text-xs opacity-50 shrink-0">
+                        [{new Date().toLocaleTimeString()}]
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
       <ComponentDemoPanel
         demo={selectedComponent ? COMPONENT_DEMOS[selectedComponent] : null}
