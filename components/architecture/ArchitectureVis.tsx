@@ -71,7 +71,11 @@ const getFlowColor = (flowType: string): string => {
   }
 };
 
-export function ArchitectureVis() {
+interface ArchitectureVisProps {
+  highlightedComponents?: string[];
+}
+
+export function ArchitectureVis({ highlightedComponents = [] }: ArchitectureVisProps) {
   const [activeFlow, setActiveFlow] = useState<FlowType>('idle');
   const [step, setStep] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
@@ -250,6 +254,7 @@ export function ArchitectureVis() {
           if (activeFlow === 'auth' && ['user', 'clerk', 'cube'].includes(key)) isActive = true;
 
           const isSelected = selectedComponent === node.id;
+          const isHighlighted = highlightedComponents.includes(node.id);
 
           return (
             <div
@@ -269,9 +274,11 @@ export function ArchitectureVis() {
                   className={`w-16 h-16 rounded-xl bg-slate-900 border flex items-center justify-center shadow-lg transition-all ${
                     isActive
                       ? 'scale-110 border-white shadow-blue-500/50'
-                      : isSelected
-                        ? 'border-indigo-500 shadow-indigo-500/50 scale-105'
-                        : 'border-slate-700 group-hover:border-indigo-500/50 group-hover:shadow-indigo-500/30 group-hover:scale-105'
+                      : isHighlighted
+                        ? 'border-yellow-500 shadow-yellow-500/50 scale-110 animate-pulse'
+                        : isSelected
+                          ? 'border-indigo-500 shadow-indigo-500/50 scale-105'
+                          : 'border-slate-700 group-hover:border-indigo-500/50 group-hover:shadow-indigo-500/30 group-hover:scale-105'
                   }`}
                 >
                   <Icon size={32} className={node.color} />

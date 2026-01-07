@@ -5,11 +5,14 @@ import { Network, Zap, LayoutGrid, Layers } from 'lucide-react';
 import { ArchitectureVis } from '@/components/architecture/ArchitectureVis';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { EnterpriseDashboard } from '@/components/dashboard/EnterpriseDashboard';
+import { AIChatButton } from '@/components/ai-architect/AIChatButton';
+import { ChatContext } from '@/types/ai-architect';
 
 type View = 'arch' | 'onboarding' | 'dashboard';
 
 export default function Home() {
   const [view, setView] = useState<View>('dashboard');
+  const [highlightedComponents, setHighlightedComponents] = useState<string[]>([]);
 
   return (
     <div className="flex flex-col h-screen bg-black text-slate-100 font-sans overflow-hidden">
@@ -62,7 +65,7 @@ export default function Home() {
       <div className="flex-1 overflow-hidden relative">
         {view === 'arch' && (
           <div className="absolute inset-0 overflow-auto bg-slate-900">
-            <ArchitectureVis />
+            <ArchitectureVis highlightedComponents={highlightedComponents} />
           </div>
         )}
         {view === 'onboarding' && (
@@ -76,6 +79,14 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      <AIChatButton
+        context={{
+          currentView: view,
+          userRole: 'Engineer',
+        }}
+        onHighlight={setHighlightedComponents}
+      />
     </div>
   );
 }
