@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, Loader2 } from 'lucide-react';
+import { X, Send, Bot, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { AIMessage } from './AIMessage';
 import { AIMessage as AIMessageType, ChatContext } from '@/types/ai-architect';
 import { generateResponse } from '@/lib/ai-architect/responder';
@@ -26,6 +26,7 @@ export function AIChatPanel({ isOpen, onClose, context, onHighlight }: AIChatPan
   const [isLoading, setIsLoading] = useState(false);
   const [isAIPowered, setIsAIPowered] = useState<boolean | null>(null);
   const [c1Available, setC1Available] = useState<boolean>(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -104,10 +105,18 @@ export function AIChatPanel({ isOpen, onClose, context, onHighlight }: AIChatPan
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-end pointer-events-none">
-      <div className="w-full max-w-md h-[600px] bg-slate-900 border-t border-l border-slate-800 rounded-tl-2xl shadow-2xl flex flex-col pointer-events-auto">
+    <div className={`fixed inset-0 bg-black/50 z-50 flex pointer-events-none transition-opacity duration-300 ${
+      isExpanded ? 'items-center justify-center' : 'items-end justify-end'
+    }`}>
+      <div className={`bg-slate-900 border border-slate-800 shadow-2xl flex flex-col pointer-events-auto transition-all duration-300 ${
+        isExpanded 
+          ? 'w-full h-screen max-w-none rounded-none' 
+          : 'w-full max-w-md h-[600px] border-t border-l rounded-tl-2xl'
+      }`}>
         {/* Header */}
-        <div className="h-14 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-950 rounded-tl-2xl">
+        <div className={`h-14 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-950 ${
+          isExpanded ? 'rounded-none' : 'rounded-tl-2xl'
+        }`}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <Bot size={18} className="text-white" />
@@ -135,16 +144,31 @@ export function AIChatPanel({ isOpen, onClose, context, onHighlight }: AIChatPan
               <div className="text-[10px] text-slate-400">Ask me anything</div>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <X size={18} className="text-slate-400" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+              title={isExpanded ? 'Minimize chat' : 'Expand chat'}
+            >
+              {isExpanded ? (
+                <Minimize2 size={18} className="text-slate-400" />
+              ) : (
+                <Maximize2 size={18} className="text-slate-400" />
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              <X size={18} className="text-slate-400" />
+            </button>
+          </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className={`flex-1 overflow-y-auto space-y-2 ${
+          isExpanded ? 'p-8 max-w-6xl mx-auto w-full' : 'p-4'
+        }`}>
           {messages.map((message) => (
             <AIMessage key={message.id} message={message} />
           ))}
@@ -159,8 +183,12 @@ export function AIChatPanel({ isOpen, onClose, context, onHighlight }: AIChatPan
         </div>
 
         {/* Input */}
-        <div className="border-t border-slate-800 p-4 bg-slate-950">
-          <div className="flex gap-2">
+        <div className={`border-t border-slate-800 bg-slate-950 ${
+          isExpanded ? 'p-6' : 'p-4'
+        }`}>
+          <div className={`flex gap-2 ${
+            isExpanded ? 'max-w-6xl mx-auto w-full' : ''
+          }`}>
             <input
               ref={inputRef}
               type="text"
@@ -179,7 +207,9 @@ export function AIChatPanel({ isOpen, onClose, context, onHighlight }: AIChatPan
               <Send size={16} className="text-white" />
             </button>
           </div>
-          <div className="mt-2 text-[10px] text-slate-500">
+          <div className={`mt-2 text-[10px] text-slate-500 ${
+            isExpanded ? 'max-w-6xl mx-auto w-full' : ''
+          }`}>
             Try: "How does data flow from ERP to Tinybird?" or "Show me a diagram of the architecture"
           </div>
         </div>
