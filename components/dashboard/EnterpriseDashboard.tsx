@@ -18,6 +18,10 @@ import { VoiceArchitect } from '@/components/voice-architect/VoiceArchitect';
 import { ImpactReviewModal } from './ImpactReviewModal';
 import { QuickWinsDashboard } from './QuickWinsDashboard';
 import { DataLineageView } from '@/components/lineage/DataLineageView';
+import { AuditLogFilters } from './AuditLogFilters';
+import { AuditLogTable } from './AuditLogTable';
+import { AuditLogTimeline } from './AuditLogTimeline';
+import { AuditLogExport } from './AuditLogExport';
 
 export function EnterpriseDashboard() {
   const [activeTab, setActiveTab] = useState<'metrics' | 'audit' | 'quickwins' | 'lineage'>('quickwins');
@@ -28,6 +32,8 @@ export function EnterpriseDashboard() {
   const [selectedLineageMetric, setSelectedLineageMetric] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<Metric[]>(SEEDED_METRICS);
   const [auditLog, setAuditLog] = useState<AuditLog[]>(SEEDED_AUDIT_LOG);
+  const [filteredAuditLog, setFilteredAuditLog] = useState<AuditLog[]>(SEEDED_AUDIT_LOG);
+  const [auditViewMode, setAuditViewMode] = useState<'table' | 'timeline'>('table');
   const [filter, setFilter] = useState<'all' | 'active' | 'pending'>('all');
 
   const handleOpenCreate = () => {
@@ -59,33 +65,82 @@ export function EnterpriseDashboard() {
       if (exists) return prev.map((m) => (m.name === newDraft.name ? newEntry : m));
       return [newEntry, ...prev];
     });
-    setAuditLog((prev) => [
-      {
-        id: Date.now(),
-        action: 'CREATE_DRAFT',
-        target: newDraft.name,
-        actor: 'You (Voice)',
-        time: 'Just now',
-        hash: '0x1d...4b',
+    const newAuditEntry: AuditLog = {
+      id: Date.now(),
+      action: 'CREATE_DRAFT',
+      target: newDraft.name,
+      actor: 'You (Voice)',
+      time: 'Just now',
+      hash: '0x1d...4b',
+      category: 'CREATE',
+      severity: 'info',
+      status: 'success',
+      ipAddress: '192.168.1.100',
+      userAgent: navigator.userAgent,
+      sessionId: `sess_${Date.now()}`,
+      requestId: `req_${Date.now()}`,
+      correlationId: `corr_${Date.now()}`,
+      before: null,
+      after: {
+        name: newDraft.name,
+        definition: newDraft.logic,
+        status: 'draft',
       },
-      ...prev,
-    ]);
+      diff: '+ Added new metric definition',
+      metadata: {
+        source: 'voice_interface',
+        confidence: 95,
+      },
+      duration: 234,
+      relatedActions: [],
+      complianceHash: `sha256:${Math.random().toString(36).substring(2, 15)}...`,
+      timestamp: new Date(),
+    };
+    setAuditLog((prev) => [newAuditEntry, ...prev]);
+    setFilteredAuditLog((prev) => [newAuditEntry, ...prev]);
     setFilter('pending');
   };
 
   const handleApprove = (id: string) => {
     setMetrics((prev) => prev.map((m) => (m.id === id ? { ...m, status: 'active' as const } : m)));
-    setAuditLog((prev) => [
-      {
-        id: Date.now(),
-        action: 'APPROVE_METRIC',
-        target: metrics.find((m) => m.id === id)?.name || 'Unknown',
-        actor: userRole,
-        time: 'Just now',
-        hash: '0x8f...2a',
+    const metric = metrics.find((m) => m.id === id);
+    const approveAuditEntry: AuditLog = {
+      id: Date.now(),
+      action: 'APPROVE_METRIC',
+      target: metric?.name || 'Unknown',
+      actor: userRole,
+      time: 'Just now',
+      hash: '0x8f...2a',
+      category: 'APPROVE',
+      severity: 'info',
+      status: 'success',
+      ipAddress: '10.0.0.12',
+      userAgent: navigator.userAgent,
+      sessionId: `sess_${Date.now()}`,
+      requestId: `req_${Date.now()}`,
+      correlationId: `corr_${Date.now()}`,
+      before: {
+        status: 'pending_approval',
+        confidence: metric?.confidence,
       },
-      ...prev,
-    ]);
+      after: {
+        status: 'active',
+        confidence: metric?.confidence,
+        approvedBy: userRole,
+        approvedAt: new Date().toISOString(),
+      },
+      diff: 'status: pending_approval → active',
+      metadata: {
+        reviewDuration: '2h 15m',
+        impactAnalysis: 'passed',
+      },
+      duration: 156,
+      relatedActions: [],
+      complianceHash: `sha256:${Math.random().toString(36).substring(2, 15)}...`,
+      timestamp: new Date(),
+    };
+    setAuditLog((prev) => [approveAuditEntry, ...prev]);
+    setFilteredAuditLog((prev) => [approveAuditEntry, ...prev]);
     setReviewItem(null);
   };
 
@@ -311,33 +366,51 @@ export function EnterpriseDashboard() {
             </div>
           )}
           {activeTab === 'audit' && (
-            <div className="max-w-6xl mx-auto animate-fade-in">
-              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 uppercase text-xs font-semibold">
-                    <tr>
-                      <th className="px-6 py-4">Time</th>
-                      <th className="px-6 py-4">Actor</th>
-                      <th className="px-6 py-4">Action</th>
-                      <th className="px-6 py-4">Target</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800">
-                    {auditLog.map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-800/30">
-                        <td className="px-6 py-4 text-slate-400 font-mono text-xs">{log.time}</td>
-                        <td className="px-6 py-4 text-white">{log.actor}</td>
-                        <td className="px-6 py-4">
-                          <span className="text-[10px] font-bold px-2 py-1 rounded border bg-blue-500/10 text-blue-400 border-blue-500/20">
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-slate-300">{log.target}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="max-w-7xl mx-auto animate-fade-in">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">System Audit Log</h2>
+                  <p className="text-slate-400 text-sm mt-1">
+                    Enterprise-grade audit trail with compliance features and detailed tracking
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                    <button
+                      onClick={() => setAuditViewMode('table')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                        auditViewMode === 'table'
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Table
+                    </button>
+                    <button
+                      onClick={() => setAuditViewMode('timeline')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                        auditViewMode === 'timeline'
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Timeline
+                    </button>
+                  </div>
+                  <AuditLogExport logs={filteredAuditLog} />
+                </div>
               </div>
+
+              <AuditLogFilters
+                logs={auditLog}
+                onFilterChange={setFilteredAuditLog}
+              />
+
+              {auditViewMode === 'table' ? (
+                <AuditLogTable logs={filteredAuditLog} />
+              ) : (
+                <AuditLogTimeline logs={filteredAuditLog} />
+              )}
             </div>
           )}
         </div>

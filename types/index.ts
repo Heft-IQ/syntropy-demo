@@ -13,6 +13,10 @@ export interface Metric {
   timestamp?: string;
 }
 
+export type AuditLogSeverity = 'info' | 'warning' | 'error' | 'critical';
+export type AuditLogStatus = 'success' | 'failed' | 'pending';
+export type AuditLogCategory = 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'QUERY' | 'AUTH' | 'CONFIG' | 'EXPORT' | 'OTHER';
+
 export interface AuditLog {
   id: number;
   action: string;
@@ -20,6 +24,23 @@ export interface AuditLog {
   actor: string;
   time: string;
   hash: string;
+  // Enterprise fields
+  ipAddress?: string;
+  userAgent?: string;
+  sessionId?: string;
+  requestId?: string;
+  correlationId?: string;
+  before?: Record<string, any>;
+  after?: Record<string, any>;
+  diff?: string;
+  category: AuditLogCategory;
+  severity: AuditLogSeverity;
+  status: AuditLogStatus;
+  metadata?: Record<string, any>;
+  duration?: number; // milliseconds
+  relatedActions?: number[];
+  complianceHash?: string; // Cryptographic hash for tamper-proofing
+  timestamp: Date; // ISO timestamp for sorting
 }
 
 export interface SimulationResult {
