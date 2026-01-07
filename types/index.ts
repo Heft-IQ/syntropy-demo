@@ -46,3 +46,25 @@ export interface SimulationData {
   new: number;
 }
 
+export interface UnmatchedField {
+  id: string;
+  sourceField: string;
+  sourceTable: string;
+  dataType: string;
+  sampleValue?: string;
+  suggestedMapping?: string;
+  confidence?: number;
+}
+
+export interface CanonicalField {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
+export interface FieldMapping {
+  unmatchedFieldId: string;
+  canonicalFieldId: string | null;
+}
+
