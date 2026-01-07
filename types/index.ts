@@ -140,11 +140,42 @@ export type ComponentType =
   | 'cube'
   | 'falkordb';
 
+export type ComponentCategory =
+  | 'data-source'
+  | 'etl'
+  | 'storage'
+  | 'compute'
+  | 'api-gateway'
+  | 'control-plane'
+  | 'auth'
+  | 'frontend';
+
+export type FlowType = 'ingestion' | 'query' | 'auth' | 'control';
+
+export interface FlowConnection {
+  from: ComponentType;
+  to: ComponentType;
+  label: string;
+  flowType: FlowType;
+  bidirectional?: boolean;
+}
+
 export interface ComponentDemo {
   id: ComponentType;
   name: string;
   description: string;
   responsibility: string;
+  category: ComponentCategory;
+  dependencies?: {
+    dependsOn: ComponentType[];
+    dependedBy: ComponentType[];
+  };
+  architectureContext?: {
+    position: string;
+    interactions: ComponentType[];
+    dataFlowIn: string[];
+    dataFlowOut: string[];
+  };
   examples: {
     data?: {
       title: string;
@@ -153,11 +184,15 @@ export interface ComponentDemo {
     };
     process?: {
       title: string;
-      steps: Array<{ step: string; description: string }>;
+      steps: Array<{ step: string; description: string; timing?: string }>;
     };
     metrics?: {
       title: string;
       stats: Array<{ label: string; value: string | number; unit?: string }>;
+    };
+    interactions?: {
+      title: string;
+      examples: Array<{ type: string; request: string; response?: string }>;
     };
     visualization?: {
       title: string;

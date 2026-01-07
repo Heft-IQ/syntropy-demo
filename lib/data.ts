@@ -11,6 +11,7 @@ import {
   ActivityItem,
   AIExplanation,
   ComponentDemo,
+  FlowConnection,
 } from '@/types';
 
 export const SEEDED_METRICS: Metric[] = [
@@ -418,6 +419,17 @@ export const COMPONENT_DEMOS: Record<string, ComponentDemo> = {
     name: 'ERP (NetSuite)',
     description: 'Enterprise Resource Planning system providing transactional data',
     responsibility: 'Source system that provides raw business data via REST API',
+    category: 'data-source',
+    dependencies: {
+      dependsOn: [],
+      dependedBy: ['worker'],
+    },
+    architectureContext: {
+      position: 'Entry point of the ingestion pipeline',
+      interactions: ['worker'],
+      dataFlowIn: [],
+      dataFlowOut: ['Raw JSON via REST API'],
+    },
     examples: {
       data: {
         title: 'Sample API Response',
@@ -462,6 +474,17 @@ export const COMPONENT_DEMOS: Record<string, ComponentDemo> = {
     name: 'dlt Worker',
     description: 'Data load tool worker that normalizes and transforms data',
     responsibility: 'ETL pipeline that standardizes data formats and schemas',
+    category: 'etl',
+    dependencies: {
+      dependsOn: ['erp'],
+      dependedBy: ['s3'],
+    },
+    architectureContext: {
+      position: 'ETL layer in the ingestion pipeline',
+      interactions: ['erp', 's3'],
+      dataFlowIn: ['Raw JSON from ERP'],
+      dataFlowOut: ['Normalized Parquet to S3'],
+    },
     examples: {
       data: {
         title: 'Transformation Example',
@@ -507,6 +530,17 @@ After (Normalized):
     name: 'S3 Bronze',
     description: 'Raw data lake storage organized by vendor connectors',
     responsibility: 'Immutable storage layer for raw ingested data with multi-vendor organization',
+    category: 'storage',
+    dependencies: {
+      dependsOn: ['worker'],
+      dependedBy: ['tinybird'],
+    },
+    architectureContext: {
+      position: 'Bronze layer in the data lake architecture',
+      interactions: ['worker', 'tinybird'],
+      dataFlowIn: ['Normalized Parquet from dlt Worker'],
+      dataFlowOut: ['Parquet files to Tinybird for processing'],
+    },
     examples: {
       data: {
         title: 'Directory Structure (Multi-Vendor)',
@@ -550,6 +584,17 @@ After (Normalized):
     name: 'Tinybird (Silver/Gold)',
     description: 'Real-time analytics database for querying processed data',
     responsibility: 'High-performance columnar database for analytical queries',
+    category: 'compute',
+    dependencies: {
+      dependsOn: ['s3'],
+      dependedBy: ['cube'],
+    },
+    architectureContext: {
+      position: 'Silver/Gold layer providing queryable analytics data',
+      interactions: ['s3', 'cube'],
+      dataFlowIn: ['Parquet from S3 Bronze', 'SQL queries from Cube Gateway'],
+      dataFlowOut: ['Query results to Cube Gateway'],
+    },
     examples: {
       data: {
         title: 'Query Example',
@@ -589,6 +634,17 @@ LIMIT 12`,
     name: 'User / Dashboard',
     description: 'End-user interface for accessing metrics and insights',
     responsibility: 'Frontend application for business users to query and visualize data',
+    category: 'frontend',
+    dependencies: {
+      dependsOn: ['cube', 'clerk'],
+      dependedBy: [],
+    },
+    architectureContext: {
+      position: 'Frontend entry point for user interactions',
+      interactions: ['cube', 'clerk'],
+      dataFlowIn: ['Metric data from Cube Gateway', 'Auth tokens from Clerk'],
+      dataFlowOut: ['Metric queries to Cube Gateway', 'Auth requests to Clerk'],
+    },
     examples: {
       data: {
         title: 'User Request',
@@ -628,6 +684,17 @@ LIMIT 12`,
     name: 'Clerk Auth',
     description: 'Authentication and authorization service',
     responsibility: 'Manages user sessions, JWT tokens, and role-based permissions',
+    category: 'auth',
+    dependencies: {
+      dependsOn: [],
+      dependedBy: ['user', 'cube'],
+    },
+    architectureContext: {
+      position: 'Authentication layer securing all API access',
+      interactions: ['user', 'cube'],
+      dataFlowIn: ['Auth requests from User/Dashboard', 'Token validation requests from Cube'],
+      dataFlowOut: ['JWT tokens to User/Dashboard', 'Permission checks to Cube Gateway'],
+    },
     examples: {
       data: {
         title: 'JWT Token Structure',
@@ -675,6 +742,17 @@ LIMIT 12`,
     name: 'Cube Gateway',
     description: 'Semantic layer API gateway for metric queries',
     responsibility: 'Resolves metric definitions, checks permissions, and routes queries',
+    category: 'api-gateway',
+    dependencies: {
+      dependsOn: ['clerk', 'falkordb', 'tinybird'],
+      dependedBy: ['user'],
+    },
+    architectureContext: {
+      position: 'Semantic layer gateway between frontend and data stores',
+      interactions: ['user', 'clerk', 'falkordb', 'tinybird'],
+      dataFlowIn: ['Metric queries from User', 'JWT tokens from Clerk', 'Schema from FalkorDB', 'Data from Tinybird'],
+      dataFlowOut: ['Resolved queries to Tinybird', 'Schema queries to FalkorDB', 'Results to User'],
+    },
     examples: {
       data: {
         title: 'Query Resolution',
@@ -717,34 +795,59 @@ Resolved Query:
   falkordb: {
     id: 'falkordb',
     name: 'FalkorDB Graph',
-    description: 'Knowledge graph storing metric definitions and relationships',
-    responsibility: 'Maintains semantic relationships between fields, metrics, and business logic',
+    description: 'Knowledge Graph (Control Plane) storing mappings between Business Terms (Canonical), ERP Columns (Physical), and Access Control (RBAC)',
+    responsibility: 'Maintains semantic relationships between canonical business terms, physical ERP assets, and access control policies',
+    category: 'control-plane',
+    dependencies: {
+      dependsOn: [],
+      dependedBy: ['cube'],
+    },
+    architectureContext: {
+      position: 'Control plane providing semantic layer and metadata',
+      interactions: ['cube'],
+      dataFlowIn: ['Schema resolution queries from Cube Gateway'],
+      dataFlowOut: ['Metric definitions and mappings to Cube Gateway'],
+    },
     examples: {
       data: {
-        title: 'Graph Query (Cypher)',
-        language: 'cypher',
-        content: `MATCH (m:Metric {name: "Net Revenue"})
--[:DEPENDS_ON]->(f:Field)
--[:MAPS_TO]->(cf:CanonicalField)
-RETURN m, f, cf
+        title: 'Project Structure & Seeding Examples',
+        language: 'text',
+        content: `/graph
+  /schema
+    schema.cql            # Indexes and Constraints
+  /seeds
+    canonical_finance.cql # Base ontology (e.g. Revenue, Margin)
+    rbac_policies.cql     # Roles and Scopes
+  /queries
+    resolve_metric.cypher # Standard queries used by the Agent
 
-Result:
-{
-  "metric": "Net Revenue",
-  "fields": [
-    {"source": "gross_sales", "canonical": "revenue"},
-    {"source": "returns", "canonical": "returns"},
-    {"source": "tax", "canonical": "tax"}
-  ]
-}`,
+A. Creating the Canonical "Ideal" Model:
+CREATE (:CanonicalEntity {name: 'Order', description: 'A commercial transaction'});
+CREATE (:CanonicalAttribute {name: 'GrossRevenue', type: 'currency'});
+CREATE (:CanonicalAttribute {name: 'CostOfGoods', type: 'currency'});
+
+B. Registering Physical ERP Assets (Multi-Tenant):
+// Register a NetSuite table for Customer A
+CREATE (:VendorTable {name: 'TRANSACTION_LINES', source: 'netsuite', tenant_id: 'cust_acme'});
+CREATE (:VendorColumn {name: 'AMOUNT_NET', type: 'float', tenant_id: 'cust_acme'});
+
+// Register a SAP table for Customer B
+CREATE (:VendorTable {name: 'BSEG', source: 'sap', tenant_id: 'cust_beta'});
+CREATE (:VendorColumn {name: 'DMBTR', type: 'decimal', tenant_id: 'cust_beta'});
+
+C. Creating the Semantic Map:
+// Map NetSuite 'AMOUNT_NET' -> Canonical 'GrossRevenue'
+MATCH (c:VendorColumn {name: 'AMOUNT_NET', tenant_id: 'cust_acme'})
+MATCH (a:CanonicalAttribute {name: 'GrossRevenue'})
+CREATE (c)-[:MAPS_TO {confidence: 0.98, author: 'auto_agent'}]->(a);`,
       },
       process: {
-        title: 'Graph Traversal',
+        title: 'Knowledge Graph Seeding & Resolution',
         steps: [
-          { step: '1. Query Metric', description: 'Find metric node in graph' },
-          { step: '2. Traverse Edges', description: 'Follow DEPENDS_ON relationships' },
-          { step: '3. Resolve Fields', description: 'Get all connected source fields' },
-          { step: '4. Return Schema', description: 'Build complete metric definition' },
+          { step: '1. Define Canonical Model', description: 'Create ideal business concepts (CanonicalEntity, CanonicalAttribute)' },
+          { step: '2. Register Physical Assets', description: 'Register ERP columns and tables with tenant_id isolation' },
+          { step: '3. Create Semantic Maps', description: 'Link physical columns to canonical attributes with confidence scores' },
+          { step: '4. Resolve Metrics', description: 'Query graph to resolve metric definitions from canonical mappings' },
         ],
       },
       metrics: {
@@ -759,4 +862,15 @@ Result:
     },
   },
 };
+
+export const FLOW_CONNECTIONS: FlowConnection[] = [
+  { from: 'erp', to: 'worker', label: 'Raw JSON', flowType: 'ingestion' },
+  { from: 'worker', to: 's3', label: 'Parquet', flowType: 'ingestion' },
+  { from: 's3', to: 'tinybird', label: 'Parquet', flowType: 'ingestion' },
+  { from: 'user', to: 'cube', label: 'Metric Query', flowType: 'query' },
+  { from: 'user', to: 'clerk', label: 'Auth Request', flowType: 'auth' },
+  { from: 'clerk', to: 'cube', label: 'JWT Token', flowType: 'auth' },
+  { from: 'cube', to: 'falkordb', label: 'Schema Query', flowType: 'control', bidirectional: true },
+  { from: 'cube', to: 'tinybird', label: 'SQL Query', flowType: 'query', bidirectional: true },
+];
 

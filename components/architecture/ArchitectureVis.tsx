@@ -12,8 +12,8 @@ import {
   Cloud,
   FileJson,
 } from 'lucide-react';
-import { ComponentType } from '@/types';
-import { COMPONENT_DEMOS } from '@/lib/data';
+import { ComponentType, ComponentCategory } from '@/types';
+import { COMPONENT_DEMOS, FLOW_CONNECTIONS } from '@/lib/data';
 import { ComponentDemoPanel } from './ComponentDemoPanel';
 
 type FlowType = 'idle' | 'ingest' | 'query' | 'auth';
@@ -25,7 +25,51 @@ interface Node {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   color: string;
   id: ComponentType;
+  category: ComponentCategory;
 }
+
+const getCategoryColor = (category: ComponentCategory): string => {
+  const colors: Record<ComponentCategory, string> = {
+    'data-source': 'bg-slate-600',
+    'etl': 'bg-blue-600',
+    'storage': 'bg-amber-600',
+    'compute': 'bg-yellow-600',
+    'api-gateway': 'bg-indigo-600',
+    'control-plane': 'bg-green-600',
+    'auth': 'bg-purple-600',
+    'frontend': 'bg-pink-600',
+  };
+  return colors[category] || 'bg-slate-600';
+};
+
+const getCategoryLabel = (category: ComponentCategory): string => {
+  const labels: Record<ComponentCategory, string> = {
+    'data-source': 'Data Source',
+    'etl': 'ETL',
+    'storage': 'Storage',
+    'compute': 'Compute',
+    'api-gateway': 'API Gateway',
+    'control-plane': 'Control Plane',
+    'auth': 'Auth',
+    'frontend': 'Frontend',
+  };
+  return labels[category] || category;
+};
+
+const getFlowColor = (flowType: string): string => {
+  switch (flowType) {
+    case 'ingestion':
+      return '#fbbf24'; // amber
+    case 'query':
+      return '#60a5fa'; // blue
+    case 'auth':
+      return '#a78bfa'; // purple
+    case 'control':
+      return '#34d399'; // green
+    default:
+      return '#64748b'; // slate
+  }
+};
 
 export function ArchitectureVis() {
   const [activeFlow, setActiveFlow] = useState<FlowType>('idle');
@@ -34,14 +78,14 @@ export function ArchitectureVis() {
   const [selectedComponent, setSelectedComponent] = useState<ComponentType | null>(null);
 
   const nodes: Record<string, Node> = {
-    erp: { x: 15, y: 20, label: 'ERP (NetSuite)', icon: Cloud, color: 'text-slate-400', id: 'erp' },
-    worker: { x: 35, y: 20, label: 'dlt Worker', icon: Settings, color: 'text-blue-400', id: 'worker' },
-    s3: { x: 55, y: 20, label: 'S3 Bronze', icon: HardDrive, color: 'text-amber-500', id: 's3' },
-    tinybird: { x: 80, y: 50, label: 'Tinybird (Silver/Gold)', icon: Database, color: 'text-yellow-500', id: 'tinybird' },
-    user: { x: 15, y: 80, label: 'User / Dashboard', icon: User, color: 'text-white', id: 'user' },
-    clerk: { x: 35, y: 80, label: 'Clerk Auth', icon: Key, color: 'text-blue-300', id: 'clerk' },
-    cube: { x: 55, y: 80, label: 'Cube Gateway', icon: Box, color: 'text-indigo-400', id: 'cube' },
-    falkordb: { x: 80, y: 80, label: 'FalkorDB Graph', icon: Activity, color: 'text-green-400', id: 'falkordb' },
+    erp: { x: 15, y: 20, label: 'ERP (NetSuite)', icon: Cloud, color: 'text-slate-400', id: 'erp', category: 'data-source' },
+    worker: { x: 35, y: 20, label: 'dlt Worker', icon: Settings, color: 'text-blue-400', id: 'worker', category: 'etl' },
+    s3: { x: 55, y: 20, label: 'S3 Bronze', icon: HardDrive, color: 'text-amber-500', id: 's3', category: 'storage' },
+    tinybird: { x: 80, y: 50, label: 'Tinybird (Silver/Gold)', icon: Database, color: 'text-yellow-500', id: 'tinybird', category: 'compute' },
+    user: { x: 15, y: 80, label: 'User / Dashboard', icon: User, color: 'text-white', id: 'user', category: 'frontend' },
+    clerk: { x: 35, y: 80, label: 'Clerk Auth', icon: Key, color: 'text-blue-300', id: 'clerk', category: 'auth' },
+    cube: { x: 55, y: 80, label: 'Cube Gateway', icon: Box, color: 'text-indigo-400', id: 'cube', category: 'api-gateway' },
+    falkordb: { x: 80, y: 80, label: 'FalkorDB Graph', icon: Activity, color: 'text-green-400', id: 'falkordb', category: 'control-plane' },
   };
 
   const startFlow = (flow: FlowType) => {
@@ -146,15 +190,48 @@ export function ArchitectureVis() {
             </marker>
           </defs>
 
-          <line x1="15%" y1="20%" x2="35%" y2="20%" stroke="#334155" strokeWidth="2" markerEnd="url(#arrow)" />
-          <line x1="35%" y1="20%" x2="55%" y2="20%" stroke="#334155" strokeWidth="2" markerEnd="url(#arrow)" />
-          <line x1="55%" y1="20%" x2="80%" y2="50%" stroke="#334155" strokeWidth="2" markerEnd="url(#arrow)" />
+          {FLOW_CONNECTIONS.map((flow, idx) => {
+            const fromNode = nodes[flow.from];
+            const toNode = nodes[flow.to];
+            if (!fromNode || !toNode) return null;
 
-          <line x1="15%" y1="80%" x2="35%" y2="80%" stroke="#334155" strokeWidth="2" markerEnd="url(#arrow)" />
-          <line x1="35%" y1="80%" x2="55%" y2="80%" stroke="#334155" strokeWidth="2" markerEnd="url(#arrow)" />
-          <line x1="55%" y1="80%" x2="80%" y2="80%" stroke="#334155" strokeWidth="2" markerEnd="url(#arrow)" />
-          <line x1="55%" y1="80%" x2="80%" y2="50%" stroke="#334155" strokeWidth="2" markerEnd="url(#arrow)" />
-          <line x1="80%" y1="80%" x2="80%" y2="50%" stroke="#334155" strokeWidth="2" strokeDasharray="5,5" />
+            // Convert percentage to SVG coordinates (assuming 1000x500 SVG viewBox)
+            const x1 = `${fromNode.x}%`;
+            const y1 = `${fromNode.y}%`;
+            const x2 = `${toNode.x}%`;
+            const y2 = `${toNode.y}%`;
+            const midX = (fromNode.x + toNode.x) / 2;
+            const midY = (fromNode.y + toNode.y) / 2;
+            const flowColor = getFlowColor(flow.flowType);
+            const isActive = activeFlow === 'ingest' && flow.flowType === 'ingestion' ||
+                            activeFlow === 'query' && flow.flowType === 'query' ||
+                            activeFlow === 'auth' && flow.flowType === 'auth';
+
+            return (
+              <g key={idx}>
+                <line
+                  x1={x1}
+                  y1={y1}
+                  x2={x2}
+                  y2={y2}
+                  stroke={isActive ? flowColor : '#334155'}
+                  strokeWidth={isActive ? 3 : 2}
+                  markerEnd={isActive ? "url(#arrow-active)" : "url(#arrow)"}
+                  opacity={isActive ? 1 : 0.6}
+                />
+                <text
+                  x={`${midX}%`}
+                  y={`${midY}%`}
+                  textAnchor="middle"
+                  className="fill-slate-400 font-medium pointer-events-auto"
+                  style={{ fontSize: '10px' }}
+                  dy="-8"
+                >
+                  {flow.label}
+                </text>
+              </g>
+            );
+          })}
 
           {activeFlow !== 'idle' && (
             <circle r="6" fill={activeFlow === 'ingest' ? '#fbbf24' : '#60a5fa'} className="animate-pulse">
@@ -199,32 +276,41 @@ export function ArchitectureVis() {
                 >
                   <Icon size={32} className={node.color} />
                 </div>
-                <span
-                  className={`mt-3 text-xs font-bold uppercase tracking-wider bg-slate-900/90 px-2 py-1 rounded transition-colors ${
-                    isActive
-                      ? 'text-white'
-                      : isSelected
-                        ? 'text-indigo-400'
-                        : 'text-slate-500 group-hover:text-slate-300'
-                  }`}
-                >
-                  {node.label}
-                </span>
-                {!isActive && (
-                  <span className="mt-1 text-[10px] text-slate-600 group-hover:text-slate-400 transition-colors">
-                    Click to explore
+                <div className="mt-3 flex flex-col items-center gap-1">
+                  <span
+                    className={`text-xs font-bold uppercase tracking-wider bg-slate-900/90 px-2 py-1 rounded transition-colors ${
+                      isActive
+                        ? 'text-white'
+                        : isSelected
+                          ? 'text-indigo-400'
+                          : 'text-slate-500 group-hover:text-slate-300'
+                    }`}
+                  >
+                    {node.label}
                   </span>
-                )}
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getCategoryColor(node.category)} text-white`}
+                  >
+                    {getCategoryLabel(node.category)}
+                  </span>
+                  {!isActive && (
+                    <span className="mt-1 text-[10px] text-slate-600 group-hover:text-slate-400 transition-colors">
+                      Click to explore
+                    </span>
+                  )}
+                </div>
               </button>
             </div>
           );
         })}
 
-        <div className="absolute left-4 top-4 text-xs font-mono text-slate-600 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">
-          Ingestion Lane (ELT)
+        <div className="absolute left-4 top-4 bg-amber-600/20 border border-amber-500/50 px-3 py-2 rounded-lg">
+          <div className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-1">Ingestion Lane (ELT)</div>
+          <div className="text-[10px] text-amber-500/80">Raw data extraction, transformation, and storage</div>
         </div>
-        <div className="absolute left-4 bottom-4 text-xs font-mono text-slate-600 uppercase tracking-widest border border-slate-700 px-2 py-1 rounded">
-          Serving Lane (API)
+        <div className="absolute left-4 bottom-4 bg-indigo-600/20 border border-indigo-500/50 px-3 py-2 rounded-lg">
+          <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Serving Lane (API)</div>
+          <div className="text-[10px] text-indigo-500/80">Query processing, authentication, and response serving</div>
         </div>
       </div>
 
